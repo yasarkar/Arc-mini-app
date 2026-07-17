@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Providers } from "./providers";
-import "./globals.css";
+import "@/styles/globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Arc Mini App",
-  description: "A mini app on Arc — Circle's USDC-native blockchain",
+  title: "ArcFlow — Smart Wallet",
+  description:
+    "ArcFlow: Akıllı Cüzdan ve Kişisel Finans — Arc L1 Blockchain üzerinde USDC-native finansal kontrol paneli.",
 };
 
 export default function RootLayout({
@@ -16,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body className={inter.className}>
         <Providers>{children}</Providers>
       </body>

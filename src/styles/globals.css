@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   ArcFlow — Premium Dark Fintech Theme
+   ============================================ */
+
+@layer base {
+  body {
+    @apply bg-[#090b16] text-white antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  ::selection {
+    @apply bg-arc-blue/20 text-white;
+  }
+}
+
+@layer components {
+  /* Glass panel for cards and sections */
+  .glass-panel {
+    @apply rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl;
+  }
+
+  /* Premium gradient accent text */
+  .text-gradient {
+    @apply bg-gradient-to-r from-arc-blue via-arc-cyan to-arc-green bg-clip-text text-transparent;
+  }
+
+  /* Unified balance value */
+  .balance-value {
+    @apply text-5xl font-light tracking-tight tabular-nums sm:text-6xl;
+  }
+
+  /* Connect / disconnect button base */
+  .wallet-button {
+    @apply inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium
+           transition-all duration-200 ease-out;
+  }
+
+  .wallet-button-primary {
+    @apply wallet-button bg-arc-blue text-white
+           hover:bg-arc-blue/90 hover:shadow-[0_0_24px_-4px_#0052FF]
+           active:scale-[0.97];
+  }
+
+  .wallet-button-ghost {
+    @apply wallet-button border border-white/10 text-white/70
+           hover:border-white/20 hover:text-white
+           active:scale-[0.97];
+  }
+
+  /* Badge for network / gas info */
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1
+           text-xs font-medium;
+  }
+
+  .badge-active {
+    @apply badge bg-arc-green/10 text-arc-green ring-1 ring-arc-green/20;
+  }
+
+  .badge-info {
+    @apply badge bg-arc-blue/10 text-arc-cyan ring-1 ring-arc-blue/20;
+  }
+}
