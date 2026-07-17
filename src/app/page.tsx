@@ -124,9 +124,13 @@ function ChainRow({ chain }: { chain: ChainBalance }) {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-white">{chain.name}</span>
-            {chain.isReal && (
+            {!chain.isMock ? (
               <span className="rounded-full bg-arc-green/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-arc-green ring-1 ring-arc-green/20">
-                Real
+                Canlı Bakiye
+              </span>
+            ) : (
+              <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500 ring-1 ring-white/[0.06]">
+                Simüle
               </span>
             )}
           </div>
