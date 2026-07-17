@@ -21,11 +21,6 @@ import type { ChainBalance } from "@/hooks/useUnifiedBalance";
 import type { SendStatus } from "@/hooks/useUniversalSend";
 
 // =========================================================================
-// Constant
-// =========================================================================
-const ARC_CHAIN_ID = 111_111;
-
-// =========================================================================
 // Utility
 // =========================================================================
 function truncateAddress(address: string) {
