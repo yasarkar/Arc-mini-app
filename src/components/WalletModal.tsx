@@ -165,16 +165,16 @@ function WalletButton({
       type="button"
       onClick={() => onConnect(wallet)}
       disabled={disabled}
-      className="group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 hover:bg-white/[0.06] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+      className="group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-300 hover:bg-white/10 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
     >
       <WalletIcon wallet={wallet} />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white">{wallet.name}</p>
-        <p className="text-xs text-zinc-500">
-          {wallet.type === "evm" ? "EVM · Browser Extension" : `${wallet.name} Wallet`}
+      <div className="flex-1 min-w-0 font-body">
+        <p className="text-sm font-semibold text-white">{wallet.name}</p>
+        <p className="text-xs text-zinc-400">
+          {wallet.type === "evm" ? "EVM · Tarayıcı Eklentisi" : `${wallet.name} Cüzdanı`}
         </p>
       </div>
-      <ChevronRight className="h-4 w-4 text-zinc-600 transition-colors group-hover:text-zinc-400" />
+      <ChevronRight className="h-4 w-4 text-zinc-500 transition-colors group-hover:text-zinc-300" />
     </button>
   );
 }
@@ -196,7 +196,7 @@ function WalletSection({
   if (wallets.length === 0) return null;
   return (
     <div>
-      <p className="mb-2 px-4 text-[10px] font-medium uppercase tracking-[0.15em] text-zinc-500">
+      <p className="mb-2 px-4 text-[10px] font-display font-semibold uppercase tracking-[0.15em] text-zinc-400">
         {title}
       </p>
       <div className="space-y-0.5">
@@ -213,22 +213,22 @@ function WalletSection({
 // =========================================================================
 function RightPanel() {
   return (
-    <div className="hidden flex-col justify-between rounded-2xl bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-cyan-500/5 p-8 md:flex md:w-[280px]">
+    <div className="hidden flex-col justify-between rounded-r-2xl bg-white/[0.02] border-l border-white/10 p-8 md:flex md:w-[280px]">
       <div>
-        <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.06]">
-          <Wallet className="h-7 w-7 text-white/60" />
+        <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-white/[0.06] border border-white/10">
+          <Wallet className="h-7 w-7 text-white/70" />
         </div>
 
-        <h3 className="mb-2 text-lg font-semibold text-white">Cüzdan nedir?</h3>
+        <h3 className="mb-4 text-base font-display font-bold uppercase tracking-wider text-white">Cüzdan nedir?</h3>
 
-        <div className="space-y-5">
+        <div className="space-y-5 font-body">
           <div className="flex gap-3">
             <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-white/[0.04]">
-              <Shield className="h-4 w-4 text-cyan-400" />
+              <Shield className="h-4 w-4 text-[#acc6e9]" />
             </div>
             <div>
-              <p className="text-sm font-medium text-white">Dijital Varlıklarınız İçin Bir Ev</p>
-              <p className="mt-0.5 text-xs text-zinc-500">
+              <p className="text-sm font-semibold text-white">Dijital Varlıklarınız İçin Bir Ev</p>
+              <p className="mt-0.5 text-xs text-semi-white">
                 Kripto paranızı, NFT&apos;lerinizi ve dijital koleksiyonlarınızı güvenle saklayın.
               </p>
             </div>
@@ -236,11 +236,11 @@ function RightPanel() {
 
           <div className="flex gap-3">
             <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-white/[0.04]">
-              <Zap className="h-4 w-4 text-amber-400" />
+              <Zap className="h-4 w-4 text-[#e9a13f]" />
             </div>
             <div>
-              <p className="text-sm font-medium text-white">Yeni Bir Giriş Yolu</p>
-              <p className="mt-0.5 text-xs text-zinc-500">
+              <p className="text-sm font-semibold text-white">Yeni Bir Giriş Yolu</p>
+              <p className="mt-0.5 text-xs text-semi-white">
                 Web3 dünyasına tek tıkla adım atın. Uygulamalara ve hizmetlere cüzdanınızla bağlanın.
               </p>
             </div>
@@ -251,8 +251,8 @@ function RightPanel() {
               <Globe className="h-4 w-4 text-arc-green" />
             </div>
             <div>
-              <p className="text-sm font-medium text-white">Çoklu Zincir Desteği</p>
-              <p className="mt-0.5 text-xs text-zinc-500">
+              <p className="text-sm font-semibold text-white">Çoklu Zincir Desteği</p>
+              <p className="mt-0.5 text-xs text-semi-white">
                 EVM, Solana ve Cosmos ekosistemlerindeki varlıklarınızı tek bir panelden yönetin.
               </p>
             </div>
@@ -265,7 +265,7 @@ function RightPanel() {
           href="https://ethereum.org/en/wallets/"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-white/[0.06] active:scale-[0.98]"
+          className="flex w-full items-center justify-center gap-1.5 rounded-[5px] border border-white/10 px-4 py-2.5 text-sm font-display font-bold text-white transition-all duration-200 hover:bg-white/10 active:scale-[0.98]"
         >
           Bir Cüzdan Edinin
           <ExternalLink className="h-3.5 w-3.5" />
@@ -274,7 +274,7 @@ function RightPanel() {
           href="https://ethereum.org/en/wallets/find-wallet/"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex w-full items-center justify-center gap-1.5 text-xs text-zinc-500 transition-colors hover:text-zinc-300"
+          className="flex w-full items-center justify-center gap-1.5 text-xs font-body text-zinc-500 transition-colors hover:text-zinc-300"
         >
           Daha fazla bilgi edinin
           <ChevronRight className="h-3 w-3" />
@@ -346,16 +346,16 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       />
 
       {/* Modal */}
-      <div className="relative z-10 mx-4 flex w-full max-w-[680px] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0B0B0F] shadow-2xl shadow-black/60">
+      <div className="relative z-10 mx-4 flex w-full max-w-[680px] overflow-hidden rounded-2xl border border-white/10 bg-[#ffffff14] backdrop-blur-md shadow-2xl shadow-black/60">
         {/* ── Left: Wallet list ── */}
         <div className="flex flex-1 flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
-            <h2 className="text-sm font-semibold text-white">Connect a Wallet</h2>
+          <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+            <h2 className="text-sm font-display font-semibold uppercase tracking-wider text-white">Bir Cüzdan Bağla</h2>
             <button
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
+              className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/10"
             >
               <X className="h-4 w-4 text-zinc-400" />
             </button>
@@ -379,18 +379,18 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
           {/* Loading indicator */}
           {(isPending || simulatingId) && (
-            <div className="flex items-center justify-center gap-2 border-t border-white/[0.06] px-5 py-3">
-              <Loader2 className="h-4 w-4 animate-spin text-arc-blue" />
-              <span className="text-xs text-zinc-400">Cüzdan bağlanıyor...</span>
+            <div className="flex items-center justify-center gap-2 border-t border-white/10 px-5 py-3">
+              <Loader2 className="h-4 w-4 animate-spin text-sky-sync" />
+              <span className="text-xs font-body text-zinc-300">Cüzdan bağlanıyor...</span>
             </div>
           )}
 
           {/* Footer hint */}
-          <div className="border-t border-white/[0.06] px-5 py-3 text-center">
-            <p className="text-[10px] text-zinc-700">
+          <div className="border-t border-white/10 px-5 py-3 text-center">
+            <p className="text-[10px] font-body text-zinc-400">
               ArcFlow tarafından desteklenmektedir ·{" "}
               <a href="https://testnet.arcscan.app" target="_blank" rel="noopener noreferrer"
-                 className="underline underline-offset-2 hover:text-zinc-500">Arc Testnet</a>
+                 className="underline underline-offset-2 hover:text-zinc-300">Arc Testnet</a>
             </p>
           </div>
         </div>

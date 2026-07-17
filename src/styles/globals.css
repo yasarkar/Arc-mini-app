@@ -8,7 +8,7 @@
 
 @layer base {
   body {
-    @apply bg-[#090b16] text-white antialiased;
+    @apply bg-arc-bg-dark text-white antialiased font-body;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
@@ -20,49 +20,49 @@
 @layer components {
   /* Glass panel for cards and sections */
   .glass-panel {
-    @apply rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl;
+    @apply rounded-xl border border-white/10 bg-white/[0.02] backdrop-blur-md;
   }
 
   /* Premium gradient accent text */
   .text-gradient {
-    @apply bg-gradient-to-r from-arc-blue via-arc-cyan to-arc-green bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-white via-sky-sync to-white/70 bg-clip-text text-transparent;
   }
 
   /* Unified balance value */
   .balance-value {
-    @apply text-5xl font-light tracking-tight tabular-nums sm:text-6xl;
+    @apply text-5xl font-display font-bold tracking-wider sm:text-6xl;
   }
 
   /* Connect / disconnect button base */
   .wallet-button {
-    @apply inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium
-           transition-all duration-200 ease-out;
+    @apply inline-flex items-center gap-2 rounded-[5px] px-5 py-2.5 text-sm font-display font-semibold
+           transition-all duration-300 ease-out;
   }
 
   .wallet-button-primary {
-    @apply wallet-button bg-arc-blue text-white
-           hover:bg-arc-blue/90 hover:shadow-[0_0_24px_-4px_#0052FF]
+    @apply wallet-button bg-gradient-to-r from-validator-blue to-sky-sync text-white
+           hover:opacity-95 hover:shadow-[0_0_20px_rgba(172,198,233,0.3)]
            active:scale-[0.97];
   }
 
   .wallet-button-ghost {
-    @apply wallet-button border border-white/10 text-white/70
+    @apply wallet-button border border-white/10 text-white/70 rounded-[5px]
            hover:border-white/20 hover:text-white
            active:scale-[0.97];
   }
 
   /* Badge for network / gas info */
   .badge {
-    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1
-           text-xs font-medium;
+    @apply inline-flex items-center gap-1.5 rounded-[5px] px-3 py-1
+           text-xs font-display font-medium border;
   }
 
   .badge-active {
-    @apply badge bg-arc-green/10 text-arc-green ring-1 ring-arc-green/20;
+    @apply badge bg-[#22C55E]/10 text-arc-green border-[#22C55E]/20;
   }
 
   .badge-info {
-    @apply badge bg-arc-blue/10 text-arc-cyan ring-1 ring-arc-blue/20;
+    @apply badge bg-[#0052FF]/10 text-[#acc6e9] border-[#0052FF]/20;
   }
 }
 

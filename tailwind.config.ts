@@ -9,6 +9,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        "arc-bg-dark": "#000b24",
+        "arc-bg-gradient-start": "#010d28",
+        "arc-bg-gradient-end": "#0b223e",
+        "validator-blue": "#2f578c",
+        "sky-sync": "#acc6e9",
+        "blockstream-gold": "#e9a13f",
+        "text-semi-white": "rgba(255, 255, 255, 0.65)",
         surface: {
           50: "#f8f9fa",
           100: "#e9eaee",
@@ -26,6 +33,11 @@ const config: Config = {
           cyan: "#00D4AA",
           green: "#22C55E",
         },
+      },
+      fontFamily: {
+        display: ["var(--font-space-grotesk)", "sans-serif"],
+        body: ["var(--font-dm-sans)", "sans-serif"],
+        mono: ["var(--font-space-mono)", "monospace"],
       },
     },
   },

@@ -90,13 +90,15 @@ function UnifiedBalanceDisplay({
         });
 
   return (
-    <div className="text-center">
-      <p className="mb-3 text-xs font-medium uppercase tracking-[0.25em] text-zinc-500">
-        Toplam Birleşik Bakiye
+    <div className="text-center select-none">
+      <p className="mb-3 text-[11px] font-display font-bold uppercase tracking-[0.25em] text-zinc-500">
+        UNIFIED BALANCE
       </p>
-      <h1 className="balance-value text-gradient">${display}</h1>
+      <h1 className="text-6xl sm:text-7xl font-display font-bold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.15)]">
+        ${display}
+      </h1>
       {isConnected && (
-        <p className="mt-2 text-sm text-zinc-500">
+        <p className="mt-3 text-sm font-body text-zinc-400">
           ≈ {display} USDC —{" "}
           <span className="text-zinc-600">tüm ağlar</span>
         </p>
@@ -110,7 +112,7 @@ function UnifiedBalanceDisplay({
 // =========================================================================
 function ChainRow({ chain }: { chain: ChainBalance }) {
   return (
-    <div className="group flex items-center justify-between rounded-xl px-4 py-3.5 transition-all duration-200 hover:bg-white/[0.04]">
+    <div className="group flex items-center justify-between rounded-xl px-4 py-3.5 transition-all duration-300 hover:bg-white/[0.04]">
       <div className="flex items-center gap-3">
         <div
           className="flex h-9 w-9 items-center justify-center rounded-full"
@@ -123,26 +125,26 @@ function ChainRow({ chain }: { chain: ChainBalance }) {
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-white">{chain.name}</span>
+            <span className="text-sm font-body font-semibold text-white">{chain.name}</span>
             {!chain.isMock ? (
-              <span className="rounded-full bg-arc-green/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-arc-green ring-1 ring-arc-green/20">
-                Canlı Bakiye
+              <span className="rounded-[5px] bg-[#22C55E]/10 px-2 py-0.5 text-[10px] font-display font-bold uppercase tracking-wider text-arc-green border border-[#22C55E]/20">
+                Canlı
               </span>
             ) : (
-              <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500 ring-1 ring-white/[0.06]">
+              <span className="rounded-[5px] bg-[#e9a13f]/10 px-2 py-0.5 text-[10px] font-display font-bold uppercase tracking-wider text-[#e9a13f] border border-[#e9a13f]/20">
                 Simüle
               </span>
             )}
           </div>
-          <span className="text-xs text-zinc-500">{chain.symbol}</span>
+          <span className="text-xs font-mono text-zinc-500">{chain.symbol}</span>
         </div>
       </div>
-      <span className="text-sm font-semibold tabular-nums text-white">
+      <span className="text-sm font-bold font-mono tabular-nums text-white">
         {chain.balance.toLocaleString(undefined, {
           minimumFractionDigits: 2,
           maximumFractionDigits: 6,
         })}{" "}
-        <span className="font-normal text-zinc-400">USDC</span>
+        <span className="font-normal font-mono text-zinc-400">{chain.symbol}</span>
       </span>
     </div>
   );
@@ -161,13 +163,13 @@ function ChainBreakdown({
   if (!isConnected) return null;
 
   return (
-    <div className="glass-panel mx-auto mt-8 w-full max-w-md overflow-hidden">
-      <div className="border-b border-white/[0.06] px-5 py-3.5">
-        <h2 className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-500">
-          Network Breakdown
+    <div className="mx-auto mt-8 w-full max-w-md overflow-hidden rounded-xl border border-white/20 bg-white/[0.02] backdrop-blur-md shadow-[0_0_24px_rgba(255,255,255,0.06)]">
+      <div className="border-b border-white/10 px-5 py-3.5">
+        <h2 className="text-xs font-display font-bold uppercase tracking-[0.15em] text-zinc-400">
+          NETWORK BREAKDOWN
         </h2>
       </div>
-      <div className="divide-y divide-white/[0.04] px-2 py-1">
+      <div className="divide-y divide-white/10 px-2 py-1">
         {chains.map((chain) => (
           <ChainRow key={chain.id} chain={chain} />
         ))}
@@ -186,20 +188,20 @@ function AddFundsCard({ isConnected }: { isConnected: boolean }) {
     <div className="mx-auto mt-4 w-full max-w-md">
       <button
         type="button"
-        className="group glass-panel flex w-full items-center justify-between px-5 py-4 transition-all duration-300 hover:bg-white/[0.06] hover:shadow-[0_0_32px_-8px_#0052FF33] active:scale-[0.99]"
+        className="group glass-panel flex w-full items-center justify-between px-5 py-4 border border-white/20 transition-all duration-300 hover:bg-white/[0.04] hover:shadow-[0_0_32px_rgba(172,198,233,0.1)] active:scale-[0.99]"
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-arc-blue/10">
-            <ArrowDownToLine className="h-5 w-5 text-arc-blue" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-sync/10 border border-sky-sync/20">
+            <ArrowDownToLine className="h-5 w-5 text-sky-sync" />
           </div>
-          <div className="text-left">
-            <p className="text-sm font-medium text-white">Add Funds via CCTP</p>
-            <p className="text-xs text-zinc-500">
+          <div className="text-left font-body">
+            <p className="text-sm font-semibold text-white">Add Funds via CCTP</p>
+            <p className="text-xs text-zinc-400">
               Bridge USDC from Ethereum, Base, Arbitrum, Solana
             </p>
           </div>
         </div>
-        <ExternalLink className="h-4 w-4 text-zinc-600 transition-colors group-hover:text-zinc-400" />
+        <ExternalLink className="h-4 w-4 text-zinc-500 transition-colors group-hover:text-zinc-300" />
       </button>
     </div>
   );
@@ -460,19 +462,19 @@ function SendFunds({
 
   if (!isConnected) return null;
 
-  const accentBorder = isPrivateMode ? "border-purple-500/30" : "border-white/[0.06]";
-  const accentHeader = isPrivateMode ? "text-purple-400" : "text-zinc-500";
+  const accentBorder = isPrivateMode ? "border-purple-500/30" : "border-white/20";
+  const accentHeader = isPrivateMode ? "text-purple-400 font-display font-bold uppercase tracking-wider" : "text-zinc-400 font-display font-bold uppercase tracking-wider";
 
   return (
     <div className="mx-auto mt-8 w-full max-w-md">
       <div
-        className={`glass-panel overflow-hidden transition-all duration-300 ${
-          isPrivateMode ? "shadow-[0_0_15px_rgba(168,85,247,0.08)]" : ""
+        className={`glass-panel overflow-hidden transition-all duration-300 border border-white/20 bg-white/[0.02] backdrop-blur-md ${
+          isPrivateMode ? "shadow-[0_0_24px_rgba(168,85,247,0.1)] border-purple-500/20" : "shadow-[0_0_24px_rgba(255,255,255,0.03)]"
         }`}
       >
         <div className={`border-b px-5 py-3.5 transition-colors duration-300 ${accentBorder}`}>
-          <h2 className={`text-xs font-medium uppercase tracking-[0.15em] transition-colors duration-300 ${accentHeader}`}>
-            Para Gönder
+          <h2 className={`text-xs transition-colors duration-300 ${accentHeader}`}>
+            PARA GÖNDER
           </h2>
         </div>
         <div className="p-5">
@@ -482,17 +484,17 @@ function SendFunds({
           {sendStatus === "idle" || sendStatus === "error" ? (
             <div className="space-y-4">
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-zinc-400">Alıcı Adresi</label>
+                <label className="mb-1.5 block text-xs font-display font-semibold uppercase tracking-wider text-zinc-400">Alıcı Adresi</label>
                 <input
                   type="text"
                   placeholder="0x... veya cüzdan adresi"
                   value={toAddress}
                   onChange={(e) => setToAddress(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-800 bg-zinc-900/80 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none transition-all duration-200 focus:border-blue-500/50 focus:shadow-[0_0_12px_-4px_#0052FF]"
+                  className="w-full rounded-[5px] border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm font-body text-white placeholder-zinc-600 outline-none transition-all duration-300 focus:border-sky-sync/50 focus:shadow-[0_0_12px_rgba(172,198,233,0.15)]"
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-zinc-400">Gönderilecek Tutar</label>
+                <label className="mb-1.5 block text-xs font-display font-semibold uppercase tracking-wider text-zinc-400">Gönderilecek Tutar</label>
                 <div className="relative">
                   <input
                     type="number"
@@ -501,41 +503,41 @@ function SendFunds({
                     placeholder="0.00"
                     value={amountStr}
                     onChange={(e) => setAmountStr(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-800 bg-zinc-900/80 px-4 py-2.5 pr-16 text-sm text-white placeholder-zinc-600 outline-none transition-all duration-200 focus:border-blue-500/50 focus:shadow-[0_0_12px_-4px_#0052FF]"
+                    className="w-full rounded-[5px] border border-white/10 bg-white/[0.02] px-4 py-2.5 pr-16 text-sm font-mono text-white placeholder-zinc-600 outline-none transition-all duration-300 focus:border-sky-sync/50 focus:shadow-[0_0_12px_rgba(172,198,233,0.15)]"
                   />
-                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-medium text-zinc-500">USDC</span>
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-mono font-medium text-zinc-500">USDC</span>
                 </div>
-                {amount > 0 && <p className="mt-1 text-xs text-zinc-600">Available: {totalUnified.toFixed(2)} USDC</p>}
+                {amount > 0 && <p className="mt-1.5 text-xs font-mono text-zinc-500">Available: {totalUnified.toFixed(2)} USDC</p>}
               </div>
               {sendError && (
-                <div className="flex items-start gap-2 rounded-xl bg-red-500/10 px-3 py-2.5 ring-1 ring-red-500/20">
+                <div className="flex items-start gap-2 rounded-[5px] bg-red-500/10 px-3 py-2.5 ring-1 ring-red-500/20 border border-red-500/10">
                   <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-400" />
-                  <p className="text-xs text-red-300">{sendError}</p>
+                  <p className="text-xs font-body text-red-300">{sendError}</p>
                 </div>
               )}
               <button
                 type="button"
                 disabled={!toAddress.trim() || amount <= 0 || insufficient}
                 onClick={handleSend}
-                className={`flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-medium text-white transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 ${
+                className={`flex w-full items-center justify-center gap-2 rounded-[5px] px-5 py-3 text-sm font-display font-bold text-white transition-all duration-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 ${
                   isPrivateMode
-                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:shadow-[0_0_24px_-4px_#7c3aed]"
-                    : "bg-arc-blue hover:bg-arc-blue/90 hover:shadow-[0_0_24px_-4px_#0052FF]"
+                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:shadow-[0_0_20px_rgba(124,58,237,0.25)]"
+                    : "bg-gradient-to-r from-validator-blue to-sky-sync hover:shadow-[0_0_20px_rgba(172,198,233,0.25)]"
                 }`}
               >
                 <Send className="h-4 w-4" />
-                {insufficient ? "Yetersiz Bakiye" : "Evrensel Gönderimi Başlat"}
+                {insufficient ? "Yetersiz Bakiye" : "EVRENSEL GÖNDERİMİ BAŞLAT"}
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 font-body">
               <Stepper status={sendStatus} isPrivateMode={isPrivateMode} />
               {sendStatus === "success" && lastViewingKey && <ViewingKeyDisplay viewingKey={lastViewingKey} />}
               {sendStatus === "success" && (
                 <button
                   type="button"
                   onClick={() => { setToAddress(""); setAmountStr(""); setLastViewingKey(null); resetSend(); }}
-                  className="mt-2 w-full rounded-xl border border-zinc-800 px-5 py-2.5 text-sm font-medium text-zinc-400 transition-all duration-200 hover:border-zinc-700 hover:text-white active:scale-[0.98]"
+                  className="mt-2 w-full rounded-[5px] border border-white/10 px-5 py-2.5 text-sm font-display font-bold text-zinc-400 transition-all duration-300 hover:border-white/20 hover:text-white active:scale-[0.98]"
                 >
                   Yeni Gönderim
                 </button>
@@ -572,13 +574,13 @@ function AuditorPanel({
 
   return (
     <div className="mx-auto mt-10 w-full max-w-md">
-      <div className="glass-panel overflow-hidden border border-amber-500/10">
-        <div className="border-b border-white/[0.06] px-5 py-3.5">
+      <div className="glass-panel overflow-hidden border border-white/20 shadow-[0_0_24px_rgba(255,255,255,0.03)]">
+        <div className="border-b border-white/10 px-5 py-3.5">
           <div className="flex items-center gap-2">
             <Search className="h-3.5 w-3.5 text-zinc-500" />
-            <h2 className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-500">Gizli İşlem Denetleme Paneli</h2>
+            <h2 className="text-xs font-display font-bold uppercase tracking-wider text-zinc-400">Gizli İşlem Denetleme Paneli</h2>
           </div>
-          <p className="mt-1 text-[10px] text-zinc-600">Auditor Tools — Bir Viewing Key girerek gizli işlem detaylarını doğrulayın.</p>
+          <p className="mt-1 text-[10px] font-body text-zinc-500">Auditor Tools — Bir Viewing Key girerek gizli işlem detaylarını doğrulayın.</p>
         </div>
         <div className="p-5 space-y-4">
           <div className="flex gap-2">
@@ -586,38 +588,38 @@ function AuditorPanel({
               type="text" placeholder="vkey_arc_..." value={inputKey}
               onChange={(e) => setInputKey(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleReveal()}
-              className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/80 px-4 py-2.5 font-mono text-xs text-white placeholder-zinc-600 outline-none transition-all duration-200 focus:border-amber-500/30 focus:shadow-[0_0_12px_-4px_#f59e0b]"
+              className="flex-1 rounded-[5px] border border-white/10 bg-white/[0.02] px-4 py-2.5 font-mono text-xs text-white placeholder-zinc-600 outline-none transition-all duration-300 focus:border-amber-500/50 focus:shadow-[0_0_12px_rgba(245,158,11,0.15)]"
             />
             <button
               type="button" onClick={handleReveal} disabled={!inputKey.trim()}
-              className="flex items-center gap-1.5 rounded-xl bg-amber-600/80 px-4 py-2.5 text-xs font-medium text-white transition-all duration-200 hover:bg-amber-600 active:scale-[0.97] disabled:opacity-30"
+              className="flex items-center gap-1.5 rounded-[5px] bg-[#e9a13f] px-4 py-2.5 text-xs font-display font-bold text-black transition-all duration-300 hover:bg-[#e9a13f]/90 active:scale-[0.97] disabled:opacity-30"
             >
               <KeyRound className="h-3.5 w-3.5" /> Reveal
             </button>
           </div>
           {revealError && (
-            <div className="flex items-start gap-2 rounded-xl bg-red-500/10 px-3 py-2.5 ring-1 ring-red-500/20">
+            <div className="flex items-start gap-2 rounded-[5px] bg-red-500/10 px-3 py-2.5 ring-1 ring-red-500/20 border border-red-500/10">
               <XCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-red-400" />
-              <p className="text-xs text-red-300">{revealError}</p>
+              <p className="text-xs font-body text-red-300">{revealError}</p>
             </div>
           )}
           {revealedTx && (
-            <div className="rounded-xl border border-arc-green/20 bg-arc-green/5 p-4 transition-all duration-500">
+            <div className="rounded-[5px] border border-[#22C55E]/20 bg-[#22C55E]/5 p-4 transition-all duration-500">
               <div className="mb-3 flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-arc-green" />
-                <span className="text-xs font-medium text-arc-green">Doğrulandı</span>
+                <span className="text-xs font-display font-bold text-arc-green">DOĞRULANDI</span>
               </div>
               <div className="space-y-2">
                 {[{ l: "Gönderen", v: truncateAddress(revealedTx.sender) }, { l: "Alıcı", v: truncateAddress(revealedTx.recipient) }, { l: "Tutar", v: `${revealedTx.amount.toFixed(2)} ${revealedTx.symbol}` }, { l: "Zaman", v: formatTime(revealedTx.timestamp) }].map((r) => (
                   <div key={r.l} className="flex justify-between">
-                    <span className="text-[11px] text-zinc-500">{r.l}</span>
+                    <span className="text-[11px] font-body text-zinc-500">{r.l}</span>
                     <span className="text-xs font-mono text-white">{r.v}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
-          {storedKeys.length > 0 && <p className="text-[10px] text-zinc-700 text-center">{storedKeys.length} görüntüleme anahtarı kullanılabilir</p>}
+          {storedKeys.length > 0 && <p className="text-[10px] font-body text-zinc-500 text-center">{storedKeys.length} görüntüleme anahtarı kullanılabilir</p>}
         </div>
       </div>
     </div>
@@ -633,28 +635,28 @@ function ActiveJobsBar({ jobs }: { jobs: ArcJob[] }) {
 
   return (
     <div className="mb-4 space-y-2">
-      <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-zinc-500">
-        Otonom Görevler
+      <p className="text-[10px] font-display font-bold uppercase tracking-wider text-zinc-400">
+        OTONOM GÖREVLER
       </p>
       <div className="space-y-2">
         {active.map((job) => (
           <div
             key={job.jobId}
-            className="flex items-center gap-3 rounded-xl border border-cyan-500/15 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 px-4 py-2.5"
+            className="flex items-center gap-3 rounded-[5px] border border-white/10 bg-white/[0.02] px-4 py-2.5"
           >
             <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-cyan-400" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-sync opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-sky-sync" />
             </span>
             <div className="flex-1 min-w-0">
-              <p className="truncate text-xs font-medium text-white">
+              <p className="truncate text-xs font-body font-semibold text-white">
                 {job.description.slice(0, 50)}
               </p>
-              <p className="text-[10px] text-cyan-300/70">
+              <p className="text-[10px] font-mono text-zinc-400">
                 ERC-8183 · {job.frequency ?? "one-time"} · {job.amount > 0 ? `${job.amount} USDC` : "Değişken"}
               </p>
             </div>
-            <Activity className="h-3.5 w-3.5 flex-shrink-0 text-cyan-400" />
+            <Activity className="h-3.5 w-3.5 flex-shrink-0 text-[#acc6e9]" />
           </div>
         ))}
       </div>
@@ -694,15 +696,15 @@ function JobApprovalCard({
   }, [job.jobId, onReject]);
 
   return (
-    <div className="mt-3 rounded-xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/5 to-blue-500/5 p-4 transition-all duration-300">
+    <div className="mt-3 rounded-[5px] border border-[#acc6e9]/20 bg-gradient-to-br from-[#2f578c]/5 to-[#acc6e9]/5 p-4 transition-all duration-300">
       <div className="mb-3 flex items-center gap-2">
-        <Zap className="h-4 w-4 text-cyan-400" />
-        <span className="text-xs font-semibold text-cyan-300">ERC-8183 Job Escrow</span>
+        <Zap className="h-4 w-4 text-[#e9a13f]" />
+        <span className="text-xs font-display font-bold uppercase tracking-wider text-sky-sync">ERC-8183 Job Escrow</span>
       </div>
 
-      <div className="mb-3 space-y-1.5">
-        <p className="text-sm font-medium text-white">{job.description}</p>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-400">
+      <div className="mb-3 space-y-1.5 text-left">
+        <p className="text-sm font-body font-semibold text-white">{job.description}</p>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-mono text-zinc-400">
           {job.amount > 0 && <span>💰 Bütçe: {job.amount > 50 ? `${job.amount} USDC` : `%${job.amount}`}</span>}
           {job.sourceChain && <span>⛓ Kaynak: {job.sourceChain}</span>}
           {job.targetChain && <span>🎯 Hedef: {job.targetChain}</span>}
@@ -716,7 +718,7 @@ function JobApprovalCard({
           type="button"
           onClick={handleApprove}
           disabled={approving || rejecting}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-arc-green/80 px-3 py-2 text-xs font-medium text-white transition-all duration-200 hover:bg-arc-green active:scale-[0.97] disabled:opacity-50"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-[5px] bg-[#22C55E]/80 px-3 py-2 text-xs font-display font-bold text-white transition-all duration-300 hover:bg-[#22C55E] active:scale-[0.97] disabled:opacity-50"
         >
           {approving ? (
             <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Onaylanıyor...</>
@@ -728,7 +730,7 @@ function JobApprovalCard({
           type="button"
           onClick={handleReject}
           disabled={approving || rejecting}
-          className="flex items-center justify-center gap-1.5 rounded-lg border border-red-500/30 px-3 py-2 text-xs font-medium text-red-300 transition-all duration-200 hover:bg-red-500/10 active:scale-[0.97] disabled:opacity-50"
+          className="flex items-center justify-center gap-1.5 rounded-[5px] border border-red-500/30 px-3 py-2 text-xs font-display font-bold text-red-300 transition-all duration-300 hover:bg-red-500/10 active:scale-[0.97] disabled:opacity-50"
         >
           {rejecting ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -819,7 +821,7 @@ function ChatInput({ onSend, disabled }: { onSend: (text: string) => void; disab
   }, [disabled]);
 
   return (
-    <div className="flex items-center gap-2 border-t border-white/[0.06] px-4 py-3">
+    <div className="flex items-center gap-2 border-t border-white/10 px-4 py-3">
       <input
         ref={inputRef}
         type="text"
@@ -828,13 +830,13 @@ function ChatInput({ onSend, disabled }: { onSend: (text: string) => void; disab
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && handleSend()}
         disabled={disabled}
-        className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none transition-all duration-200 focus:border-cyan-500/30 focus:shadow-[0_0_12px_-4px_#06b6d4] disabled:opacity-30"
+        className="flex-1 rounded-[5px] border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm font-body text-white placeholder-zinc-600 outline-none transition-all duration-300 focus:border-sky-sync/50 focus:shadow-[0_0_12px_rgba(172,198,233,0.15)] disabled:opacity-30"
       />
       <button
         type="button"
         onClick={handleSend}
         disabled={!input.trim() || disabled}
-        className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 transition-all duration-200 hover:shadow-[0_0_16px_-4px_#06b6d4] active:scale-[0.93] disabled:opacity-30"
+        className="flex h-10 w-10 items-center justify-center rounded-[5px] bg-gradient-to-r from-validator-blue to-sky-sync transition-all duration-300 hover:shadow-[0_0_16px_rgba(172,198,233,0.3)] active:scale-[0.93] disabled:opacity-30"
       >
         <SendHorizonal className="h-4 w-4 text-white" />
       </button>
@@ -858,22 +860,22 @@ function ArcAgentPanel() {
 
   return (
     <div className="mx-auto mt-10 w-full max-w-md">
-      <div className="glass-panel overflow-hidden border border-cyan-500/10">
+      <div className="glass-panel overflow-hidden border border-white/20 shadow-[0_0_24px_rgba(255,255,255,0.03)]">
         {/* Header — clickable to collapse */}
         <button
           type="button"
           onClick={toggleChat}
-          className="flex w-full items-center justify-between border-b border-white/[0.06] px-5 py-3.5 transition-colors hover:bg-white/[0.02]"
+          className="flex w-full items-center justify-between border-b border-white/10 px-5 py-3.5 transition-colors hover:bg-white/[0.02]"
         >
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20">
-              <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+              <Sparkles className="h-3.5 w-3.5 text-sky-sync" />
             </div>
             <div className="text-left">
-              <h2 className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">
+              <h2 className="text-xs font-display font-bold uppercase tracking-wider text-zinc-400">
                 Arc Assistant
               </h2>
-              <p className="text-[10px] text-zinc-600">ERC-8004 Onchain AI Agent</p>
+              <p className="text-[10px] font-body text-zinc-500">ERC-8004 Onchain AI Agent</p>
             </div>
           </div>
           {isChatOpen ? <ChevronUp className="h-4 w-4 text-zinc-500" /> : <ChevronDown className="h-4 w-4 text-zinc-500" />}
@@ -884,7 +886,7 @@ function ArcAgentPanel() {
           <>
             {/* Active Jobs */}
             {activeJobs.filter((j) => j.status === "running" || j.status === "escrowed").length > 0 && (
-              <div className="border-b border-white/[0.04] px-5 py-4">
+              <div className="border-b border-white/10 px-5 py-4">
                 <ActiveJobsBar jobs={activeJobs} />
               </div>
             )}
@@ -986,10 +988,10 @@ export default function Home() {
   const realArcBalance = arcChain?.balance ?? 0;
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0B0B0F]">
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-arc-bg-gradient-start to-arc-bg-gradient-end">
       <header className="flex items-center justify-between px-6 py-5 sm:px-10">
-        <span className="text-lg font-semibold tracking-tight text-white">
-          <span className="text-gradient">ArcFlow</span>
+        <span className="text-lg font-display font-bold tracking-tight text-white uppercase">
+          <span className="bg-gradient-to-r from-white via-sky-sync to-white/70 bg-clip-text text-transparent">ArcFlow</span>
         </span>
         <ConnectWallet
           isConnected={isConnected}
