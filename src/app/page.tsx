@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { injected } from "wagmi/connectors";
 import {
@@ -20,13 +20,23 @@ import {
   Check,
   KeyRound,
   Search,
+  Bot,
+  Sparkles,
+  SendHorizonal,
+  ChevronDown,
+  ChevronUp,
+  Activity,
+  Zap,
+  Ban,
 } from "lucide-react";
 import { useUnifiedBalance } from "@/hooks/useUnifiedBalance";
 import { useUniversalSend } from "@/hooks/useUniversalSend";
 import { usePrivacyTransfer } from "@/hooks/usePrivacyTransfer";
+import { useArcAgent } from "@/hooks/useArcAgent";
 import type { ChainBalance } from "@/hooks/useUnifiedBalance";
 import type { SendStatus } from "@/hooks/useUniversalSend";
 import type { PrivateTxDetails } from "@/hooks/usePrivacyTransfer";
+import type { Message, ArcJob } from "@/hooks/useArcAgent";
 
 // =========================================================================
 // Utility
@@ -191,7 +201,7 @@ function AddFundsCard({ isConnected }: { isConnected: boolean }) {
 }
 
 // =========================================================================
-// Privacy Toggle — iOS-style switch
+// Privacy Toggle
 // =========================================================================
 function PrivacyToggle({
   isPrivateMode,
@@ -225,8 +235,6 @@ function PrivacyToggle({
           <p className="text-xs text-zinc-500">Opt-in Privacy ile koru</p>
         </div>
       </div>
-
-      {/* iOS-style switch */}
       <button
         type="button"
         role="switch"
@@ -248,7 +256,7 @@ function PrivacyToggle({
 }
 
 // =========================================================================
-// Stepper — animated transaction progress
+// Stepper
 // =========================================================================
 const STEP_DEFS: {
   key: SendStatus;
@@ -301,11 +309,7 @@ function Stepper({
           icon = <XCircle className="h-5 w-5 text-red-500" />;
           rowClass = "opacity-100";
         } else if (isCurrentStep) {
-          icon = (
-            <Loader2
-              className={`h-5 w-5 animate-spin ${accentColor}`}
-            />
-          );
+          icon = <Loader2 className={`h-5 w-5 animate-spin ${accentColor}`} />;
           rowClass = "opacity-100";
         } else if (isPastStep) {
           icon = <CheckCircle2 className="h-5 w-5 text-arc-green" />;
@@ -328,7 +332,6 @@ function Stepper({
         );
       })}
 
-      {/* Success banner */}
       {isSuccess && (
         <div className="mt-4 rounded-xl bg-arc-green/10 p-4 text-center ring-1 ring-arc-green/20 transition-all duration-500">
           <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-arc-green" />
@@ -339,7 +342,6 @@ function Stepper({
         </div>
       )}
 
-      {/* Error banner */}
       {isError && (
         <div className="mt-4 rounded-xl bg-red-500/10 p-4 text-center ring-1 ring-red-500/20 transition-all duration-500">
           <XCircle className="mx-auto mb-2 h-8 w-8 text-red-500" />
@@ -362,7 +364,7 @@ function ViewingKeyDisplay({ viewingKey }: { viewingKey: string }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback: select text manually
+      // silent
     }
   }, [viewingKey]);
 
@@ -399,7 +401,7 @@ function ViewingKeyDisplay({ viewingKey }: { viewingKey: string }) {
 }
 
 // =========================================================================
-// Send Funds — form + stepper + privacy
+// Send Funds
 // =========================================================================
 function SendFunds({
   isConnected,
@@ -424,7 +426,6 @@ function SendFunds({
   const { sendStatus, sendError, executeSend, resetSend } =
     useUniversalSend(totalUnified, realArcBalance, isConnected);
 
-  // Generate viewing key when send completes in private mode
   if (sendStatus === "success" && !txCompleted && isPrivateMode) {
     const mockDetails: PrivateTxDetails = {
       txHash: `0x${Array.from({ length: 64 }, () =>
@@ -464,31 +465,19 @@ function SendFunds({
           isPrivateMode ? "shadow-[0_0_15px_rgba(168,85,247,0.08)]" : ""
         }`}
       >
-        {/* Header */}
         <div className={`border-b px-5 py-3.5 transition-colors duration-300 ${accentBorder}`}>
           <h2 className={`text-xs font-medium uppercase tracking-[0.15em] transition-colors duration-300 ${accentHeader}`}>
             Para Gönder
           </h2>
         </div>
-
-        {/* Body */}
         <div className="p-5">
-          {/* Privacy Toggle */}
           <div className="mb-4">
-            <PrivacyToggle
-              isPrivateMode={isPrivateMode}
-              onToggle={onTogglePrivacy}
-            />
+            <PrivacyToggle isPrivateMode={isPrivateMode} onToggle={onTogglePrivacy} />
           </div>
-
           {sendStatus === "idle" || sendStatus === "error" ? (
-            /* ── Form ── */
             <div className="space-y-4">
-              {/* Recipient */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-zinc-400">
-                  Alıcı Adresi
-                </label>
+                <label className="mb-1.5 block text-xs font-medium text-zinc-400">Alıcı Adresi</label>
                 <input
                   type="text"
                   placeholder="0x... veya cüzdan adresi"
@@ -497,12 +486,8 @@ function SendFunds({
                   className="w-full rounded-xl border border-zinc-800 bg-zinc-900/80 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none transition-all duration-200 focus:border-blue-500/50 focus:shadow-[0_0_12px_-4px_#0052FF]"
                 />
               </div>
-
-              {/* Amount */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-zinc-400">
-                  Gönderilecek Tutar
-                </label>
+                <label className="mb-1.5 block text-xs font-medium text-zinc-400">Gönderilecek Tutar</label>
                 <div className="relative">
                   <input
                     type="number"
@@ -513,26 +498,16 @@ function SendFunds({
                     onChange={(e) => setAmountStr(e.target.value)}
                     className="w-full rounded-xl border border-zinc-800 bg-zinc-900/80 px-4 py-2.5 pr-16 text-sm text-white placeholder-zinc-600 outline-none transition-all duration-200 focus:border-blue-500/50 focus:shadow-[0_0_12px_-4px_#0052FF]"
                   />
-                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-medium text-zinc-500">
-                    USDC
-                  </span>
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-medium text-zinc-500">USDC</span>
                 </div>
-                {amount > 0 && (
-                  <p className="mt-1 text-xs text-zinc-600">
-                    Available: {totalUnified.toFixed(2)} USDC
-                  </p>
-                )}
+                {amount > 0 && <p className="mt-1 text-xs text-zinc-600">Available: {totalUnified.toFixed(2)} USDC</p>}
               </div>
-
-              {/* Error message */}
               {sendError && (
                 <div className="flex items-start gap-2 rounded-xl bg-red-500/10 px-3 py-2.5 ring-1 ring-red-500/20">
                   <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-400" />
                   <p className="text-xs text-red-300">{sendError}</p>
                 </div>
               )}
-
-              {/* Send button */}
               <button
                 type="button"
                 disabled={!toAddress.trim() || amount <= 0 || insufficient}
@@ -544,31 +519,17 @@ function SendFunds({
                 }`}
               >
                 <Send className="h-4 w-4" />
-                {insufficient
-                  ? "Yetersiz Bakiye"
-                  : "Evrensel Gönderimi Başlat"}
+                {insufficient ? "Yetersiz Bakiye" : "Evrensel Gönderimi Başlat"}
               </button>
             </div>
           ) : (
-            /* ── Stepper / Result ── */
             <div className="space-y-4">
               <Stepper status={sendStatus} isPrivateMode={isPrivateMode} />
-
-              {/* Viewing Key (only on success + private mode) */}
-              {sendStatus === "success" && lastViewingKey && (
-                <ViewingKeyDisplay viewingKey={lastViewingKey} />
-              )}
-
-              {/* Reset button on success */}
+              {sendStatus === "success" && lastViewingKey && <ViewingKeyDisplay viewingKey={lastViewingKey} />}
               {sendStatus === "success" && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setToAddress("");
-                    setAmountStr("");
-                    setLastViewingKey(null);
-                    resetSend();
-                  }}
+                  onClick={() => { setToAddress(""); setAmountStr(""); setLastViewingKey(null); resetSend(); }}
                   className="mt-2 w-full rounded-xl border border-zinc-800 px-5 py-2.5 text-sm font-medium text-zinc-400 transition-all duration-200 hover:border-zinc-700 hover:text-white active:scale-[0.98]"
                 >
                   Yeni Gönderim
@@ -600,108 +561,347 @@ function AuditorPanel({
     const trimmed = inputKey.trim();
     if (!trimmed) return;
     const result = revealTransactionDetails(trimmed);
-    if (result) {
-      setRevealedTx(result);
-      setRevealError(null);
-    } else {
-      setRevealedTx(null);
-      setRevealError("Geçersiz veya süresi dolmuş görüntüleme anahtarı.");
-    }
+    if (result) { setRevealedTx(result); setRevealError(null); }
+    else { setRevealedTx(null); setRevealError("Geçersiz veya süresi dolmuş görüntüleme anahtarı."); }
   }, [inputKey, revealTransactionDetails]);
 
   return (
     <div className="mx-auto mt-10 w-full max-w-md">
       <div className="glass-panel overflow-hidden border border-amber-500/10">
-        {/* Header */}
         <div className="border-b border-white/[0.06] px-5 py-3.5">
           <div className="flex items-center gap-2">
             <Search className="h-3.5 w-3.5 text-zinc-500" />
-            <h2 className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-500">
-              Gizli İşlem Denetleme Paneli
-            </h2>
+            <h2 className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-500">Gizli İşlem Denetleme Paneli</h2>
           </div>
-          <p className="mt-1 text-[10px] text-zinc-600">
-            Auditor Tools — Bir Viewing Key girerek gizli işlem detaylarını
-            doğrulayın.
-          </p>
+          <p className="mt-1 text-[10px] text-zinc-600">Auditor Tools — Bir Viewing Key girerek gizli işlem detaylarını doğrulayın.</p>
         </div>
-
-        {/* Body */}
         <div className="p-5 space-y-4">
-          {/* Input + button */}
           <div className="flex gap-2">
             <input
-              type="text"
-              placeholder="vkey_arc_..."
-              value={inputKey}
+              type="text" placeholder="vkey_arc_..." value={inputKey}
               onChange={(e) => setInputKey(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleReveal()}
               className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/80 px-4 py-2.5 font-mono text-xs text-white placeholder-zinc-600 outline-none transition-all duration-200 focus:border-amber-500/30 focus:shadow-[0_0_12px_-4px_#f59e0b]"
             />
             <button
-              type="button"
-              onClick={handleReveal}
-              disabled={!inputKey.trim()}
+              type="button" onClick={handleReveal} disabled={!inputKey.trim()}
               className="flex items-center gap-1.5 rounded-xl bg-amber-600/80 px-4 py-2.5 text-xs font-medium text-white transition-all duration-200 hover:bg-amber-600 active:scale-[0.97] disabled:opacity-30"
             >
-              <KeyRound className="h-3.5 w-3.5" />
-              Reveal
+              <KeyRound className="h-3.5 w-3.5" /> Reveal
             </button>
           </div>
-
-          {/* Error */}
           {revealError && (
             <div className="flex items-start gap-2 rounded-xl bg-red-500/10 px-3 py-2.5 ring-1 ring-red-500/20">
               <XCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-red-400" />
               <p className="text-xs text-red-300">{revealError}</p>
             </div>
           )}
-
-          {/* Revealed transaction details */}
           {revealedTx && (
             <div className="rounded-xl border border-arc-green/20 bg-arc-green/5 p-4 transition-all duration-500">
               <div className="mb-3 flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-arc-green" />
-                <span className="text-xs font-medium text-arc-green">
-                  Doğrulandı
-                </span>
+                <span className="text-xs font-medium text-arc-green">Doğrulandı</span>
               </div>
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-[11px] text-zinc-500">Gönderen</span>
-                  <span className="text-xs font-mono text-white">
-                    {truncateAddress(revealedTx.sender)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[11px] text-zinc-500">Alıcı</span>
-                  <span className="text-xs font-mono text-white">
-                    {truncateAddress(revealedTx.recipient)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[11px] text-zinc-500">Tutar</span>
-                  <span className="text-xs font-medium text-white">
-                    {revealedTx.amount.toFixed(2)} {revealedTx.symbol}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[11px] text-zinc-500">Zaman</span>
-                  <span className="text-xs text-zinc-300">
-                    {formatTime(revealedTx.timestamp)}
-                  </span>
-                </div>
+                {[{ l: "Gönderen", v: truncateAddress(revealedTx.sender) }, { l: "Alıcı", v: truncateAddress(revealedTx.recipient) }, { l: "Tutar", v: `${revealedTx.amount.toFixed(2)} ${revealedTx.symbol}` }, { l: "Zaman", v: formatTime(revealedTx.timestamp) }].map((r) => (
+                  <div key={r.l} className="flex justify-between">
+                    <span className="text-[11px] text-zinc-500">{r.l}</span>
+                    <span className="text-xs font-mono text-white">{r.v}</span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
+          {storedKeys.length > 0 && <p className="text-[10px] text-zinc-700 text-center">{storedKeys.length} görüntüleme anahtarı kullanılabilir</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-          {/* Stored keys count */}
-          {storedKeys.length > 0 && (
-            <p className="text-[10px] text-zinc-700 text-center">
-              {storedKeys.length} görüntüleme anahtarı kullanılabilir
-            </p>
+// =========================================================================
+// AI Agent — Active Jobs Bar
+// =========================================================================
+function ActiveJobsBar({ jobs }: { jobs: ArcJob[] }) {
+  const active = jobs.filter((j) => j.status === "running" || j.status === "escrowed");
+  if (active.length === 0) return null;
+
+  return (
+    <div className="mb-4 space-y-2">
+      <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-zinc-500">
+        Otonom Görevler
+      </p>
+      <div className="space-y-2">
+        {active.map((job) => (
+          <div
+            key={job.jobId}
+            className="flex items-center gap-3 rounded-xl border border-cyan-500/15 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 px-4 py-2.5"
+          >
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-cyan-400" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="truncate text-xs font-medium text-white">
+                {job.description.slice(0, 50)}
+              </p>
+              <p className="text-[10px] text-cyan-300/70">
+                ERC-8183 · {job.frequency ?? "one-time"} · {job.amount > 0 ? `${job.amount} USDC` : "Değişken"}
+              </p>
+            </div>
+            <Activity className="h-3.5 w-3.5 flex-shrink-0 text-cyan-400" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// =========================================================================
+// AI Agent — Job Approval Card
+// =========================================================================
+function JobApprovalCard({
+  job,
+  onApprove,
+  onReject,
+}: {
+  job: ArcJob;
+  onApprove: (id: string) => void;
+  onReject: (id: string) => void;
+}) {
+  const [approving, setApproving] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+
+  const handleApprove = useCallback(() => {
+    setApproving(true);
+    setTimeout(() => {
+      onApprove(job.jobId);
+      setApproving(false);
+    }, 1200);
+  }, [job.jobId, onApprove]);
+
+  const handleReject = useCallback(() => {
+    setRejecting(true);
+    setTimeout(() => {
+      onReject(job.jobId);
+      setRejecting(false);
+    }, 600);
+  }, [job.jobId, onReject]);
+
+  return (
+    <div className="mt-3 rounded-xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/5 to-blue-500/5 p-4 transition-all duration-300">
+      <div className="mb-3 flex items-center gap-2">
+        <Zap className="h-4 w-4 text-cyan-400" />
+        <span className="text-xs font-semibold text-cyan-300">ERC-8183 Job Escrow</span>
+      </div>
+
+      <div className="mb-3 space-y-1.5">
+        <p className="text-sm font-medium text-white">{job.description}</p>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-400">
+          {job.amount > 0 && <span>💰 Bütçe: {job.amount > 50 ? `${job.amount} USDC` : `%${job.amount}`}</span>}
+          {job.sourceChain && <span>⛓ Kaynak: {job.sourceChain}</span>}
+          {job.targetChain && <span>🎯 Hedef: {job.targetChain}</span>}
+          {job.frequency && <span>🔄 {job.frequency}</span>}
+          {job.privacyMode && <span>🔒 Gizli Mod</span>}
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={handleApprove}
+          disabled={approving || rejecting}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-arc-green/80 px-3 py-2 text-xs font-medium text-white transition-all duration-200 hover:bg-arc-green active:scale-[0.97] disabled:opacity-50"
+        >
+          {approving ? (
+            <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Onaylanıyor...</>
+          ) : (
+            <><CheckCircle2 className="h-3.5 w-3.5" /> Görevi Zincir Üstünde Onayla</>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={handleReject}
+          disabled={approving || rejecting}
+          className="flex items-center justify-center gap-1.5 rounded-lg border border-red-500/30 px-3 py-2 text-xs font-medium text-red-300 transition-all duration-200 hover:bg-red-500/10 active:scale-[0.97] disabled:opacity-50"
+        >
+          {rejecting ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Ban className="h-3.5 w-3.5" />
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================================
+// AI Agent — Chat Message
+// =========================================================================
+function ChatMessage({
+  msg,
+  jobs,
+  onApprove,
+  onReject,
+}: {
+  msg: Message;
+  jobs: ArcJob[];
+  onApprove: (id: string) => void;
+  onReject: (id: string) => void;
+}) {
+  const isUser = msg.role === "user";
+  const linkedJob = msg.jobId ? jobs.find((j) => j.jobId === msg.jobId) : null;
+  const isPendingApproval = linkedJob?.status === "pending_approval";
+
+  return (
+    <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
+      {/* Avatar */}
+      <div
+        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
+          isUser ? "bg-arc-blue/20" : "bg-gradient-to-br from-cyan-500/20 to-blue-500/20"
+        }`}
+      >
+        {isUser ? (
+          <span className="text-xs font-bold text-arc-blue">U</span>
+        ) : (
+          <Bot className="h-4 w-4 text-cyan-400" />
+        )}
+      </div>
+
+      {/* Bubble */}
+      <div className={`max-w-[85%] ${isUser ? "text-right" : ""}`}>
+        <div
+          className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+            isUser
+              ? "bg-arc-blue/10 text-white"
+              : "bg-zinc-800/60 text-zinc-200"
+          }`}
+          style={{ whiteSpace: "pre-wrap" }}
+        >
+          {msg.text}
+
+          {/* Job approval card embedded */}
+          {isPendingApproval && linkedJob && (
+            <JobApprovalCard job={linkedJob} onApprove={onApprove} onReject={onReject} />
           )}
         </div>
+        <p className="mt-1 text-[10px] text-zinc-700">
+          {msg.timestamp.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+          {!isUser && <span className="ml-2 text-cyan-500/50">ERC-8004 Agent</span>}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================================
+// AI Agent — Chat Input
+// =========================================================================
+function ChatInput({ onSend, disabled }: { onSend: (text: string) => void; disabled: boolean }) {
+  const [input, setInput] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleSend = useCallback(() => {
+    const trimmed = input.trim();
+    if (!trimmed || disabled) return;
+    onSend(trimmed);
+    setInput("");
+  }, [input, disabled, onSend]);
+
+  useEffect(() => {
+    if (!disabled) inputRef.current?.focus();
+  }, [disabled]);
+
+  return (
+    <div className="flex items-center gap-2 border-t border-white/[0.06] px-4 py-3">
+      <input
+        ref={inputRef}
+        type="text"
+        placeholder="Ajana finansal bir görev verin..."
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && handleSend()}
+        disabled={disabled}
+        className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none transition-all duration-200 focus:border-cyan-500/30 focus:shadow-[0_0_12px_-4px_#06b6d4] disabled:opacity-30"
+      />
+      <button
+        type="button"
+        onClick={handleSend}
+        disabled={!input.trim() || disabled}
+        className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 transition-all duration-200 hover:shadow-[0_0_16px_-4px_#06b6d4] active:scale-[0.93] disabled:opacity-30"
+      >
+        <SendHorizonal className="h-4 w-4 text-white" />
+      </button>
+    </div>
+  );
+}
+
+// =========================================================================
+// AI Agent — Full Panel
+// =========================================================================
+function ArcAgentPanel() {
+  const { messages, activeJobs, sendMessage, approveJob, rejectJob, isChatOpen, toggleChat } = useArcAgent();
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const isSending = false; // messages are instant
+
+  return (
+    <div className="mx-auto mt-10 w-full max-w-md">
+      <div className="glass-panel overflow-hidden border border-cyan-500/10">
+        {/* Header — clickable to collapse */}
+        <button
+          type="button"
+          onClick={toggleChat}
+          className="flex w-full items-center justify-between border-b border-white/[0.06] px-5 py-3.5 transition-colors hover:bg-white/[0.02]"
+        >
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20">
+              <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+            </div>
+            <div className="text-left">
+              <h2 className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">
+                Arc Assistant
+              </h2>
+              <p className="text-[10px] text-zinc-600">ERC-8004 Onchain AI Agent</p>
+            </div>
+          </div>
+          {isChatOpen ? <ChevronUp className="h-4 w-4 text-zinc-500" /> : <ChevronDown className="h-4 w-4 text-zinc-500" />}
+        </button>
+
+        {/* Collapsible content */}
+        {isChatOpen && (
+          <>
+            {/* Active Jobs */}
+            {activeJobs.filter((j) => j.status === "running" || j.status === "escrowed").length > 0 && (
+              <div className="border-b border-white/[0.04] px-5 py-4">
+                <ActiveJobsBar jobs={activeJobs} />
+              </div>
+            )}
+
+            {/* Messages */}
+            <div className="h-80 space-y-4 overflow-y-auto px-5 py-4 scrollbar-thin">
+              {messages.map((msg) => (
+                <ChatMessage
+                  key={msg.id}
+                  msg={msg}
+                  jobs={activeJobs}
+                  onApprove={approveJob}
+                  onReject={rejectJob}
+                />
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Input */}
+            <ChatInput onSend={sendMessage} disabled={false} />
+          </>
+        )}
       </div>
     </div>
   );
@@ -723,11 +923,7 @@ function ConnectWallet({
   if (isConnected && address) {
     return (
       <div className="flex flex-col items-end gap-3">
-        <button
-          type="button"
-          onClick={() => disconnect()}
-          className="wallet-button-ghost"
-        >
+        <button type="button" onClick={() => disconnect()} className="wallet-button-ghost">
           <span className="h-2 w-2 rounded-full bg-arc-green shadow-[0_0_8px_#22C55E]" />
           {truncateAddress(address)}
           <Unplug className="h-3.5 w-3.5 text-white/40" />
@@ -741,16 +937,12 @@ function ConnectWallet({
     <button
       type="button"
       onClick={async () => {
-        try {
-          await connectAsync({ connector: injected() });
-        } catch {
-          // user cancelled — silent
-        }
+        try { await connectAsync({ connector: injected() }); }
+        catch { /* silent */ }
       }}
       className="wallet-button-primary"
     >
-      <Wallet className="h-4 w-4" />
-      Connect Wallet
+      <Wallet className="h-4 w-4" /> Connect Wallet
     </button>
   );
 }
@@ -763,12 +955,8 @@ function Footer() {
     <footer className="mt-auto border-t border-white/[0.04] px-6 py-6 text-center">
       <p className="text-xs text-zinc-700">
         ArcFlow — Built on{" "}
-        <a
-          href="https://testnet.arcscan.app"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-zinc-500 underline underline-offset-2 transition-colors hover:text-zinc-300"
-        >
+        <a href="https://testnet.arcscan.app" target="_blank" rel="noopener noreferrer"
+           className="text-zinc-500 underline underline-offset-2 transition-colors hover:text-zinc-300">
           Arc Testnet
         </a>
         <span className="mx-2 text-zinc-700">·</span>
@@ -785,22 +973,15 @@ export default function Home() {
   const { isConnected, address } = useAccount();
   const { totalUnified, chains, isLoading } = useUnifiedBalance();
   const {
-    isPrivateMode,
-    togglePrivacy,
-    generateViewingKey,
-    revealTransactionDetails,
-    storedKeys,
+    isPrivateMode, togglePrivacy, generateViewingKey,
+    revealTransactionDetails, storedKeys,
   } = usePrivacyTransfer();
 
-  // Extract real Arc balance from chains
   const arcChain = chains.find((c) => c.id === "arc");
   const realArcBalance = arcChain?.balance ?? 0;
 
   return (
     <div className="flex min-h-screen flex-col bg-[#0B0B0F]">
-      {/* -------------------------------------------------- */}
-      {/* Top bar */}
-      {/* -------------------------------------------------- */}
       <header className="flex items-center justify-between px-6 py-5 sm:px-10">
         <span className="text-lg font-semibold tracking-tight text-white">
           <span className="text-gradient">ArcFlow</span>
@@ -808,33 +989,16 @@ export default function Home() {
         <ConnectWallet isConnected={isConnected} address={address} />
       </header>
 
-      {/* -------------------------------------------------- */}
-      {/* Main content */}
-      {/* -------------------------------------------------- */}
       <main className="flex flex-1 flex-col items-center justify-center px-6 pb-24 pt-8 sm:px-10">
-        <UnifiedBalanceDisplay
-          total={totalUnified}
-          isLoading={isLoading}
-          isConnected={isConnected}
-        />
-
+        <UnifiedBalanceDisplay total={totalUnified} isLoading={isLoading} isConnected={isConnected} />
         <ChainBreakdown chains={chains} isConnected={isConnected} />
-
         <SendFunds
-          isConnected={isConnected}
-          totalUnified={totalUnified}
-          realArcBalance={realArcBalance}
-          isPrivateMode={isPrivateMode}
-          onTogglePrivacy={togglePrivacy}
-          generateViewingKey={generateViewingKey}
+          isConnected={isConnected} totalUnified={totalUnified} realArcBalance={realArcBalance}
+          isPrivateMode={isPrivateMode} onTogglePrivacy={togglePrivacy} generateViewingKey={generateViewingKey}
         />
-
         <AddFundsCard isConnected={isConnected} />
-
-        <AuditorPanel
-          storedKeys={storedKeys}
-          revealTransactionDetails={revealTransactionDetails}
-        />
+        <AuditorPanel storedKeys={storedKeys} revealTransactionDetails={revealTransactionDetails} />
+        <ArcAgentPanel />
       </main>
 
       <Footer />

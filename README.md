@@ -44,23 +44,26 @@ npm run dev
 - [x] Gerçek Arc Testnet USDC bakiyesi sorgulama
 - [x] Çoklu zincir simüle bakiyeler (Base, Arbitrum, Solana)
 - [x] Toplam Birleşik Bakiye gösterimi
-- [x] Network Breakdown kartı (her ağ için renkli dot + bakiye)
-- [x] "Real" badge ile Arc Testnet gerçek bakiyesi işaretleme
+- [x] Network Breakdown kartı
+- [x] "Real" badge ile Arc Testnet gerçek bakiyesi
 - [x] "Add Funds via CCTP" aksiyon butonu
 
-### Faz 2 — Universal Send (Evrensel Gönderim)
-- [x] `useUniversalSend` hook — durum makinesi (`idle` → `aggregating` → `bridging` → `finalizing` → `success`)
-- [x] Bakiye kontrolü: Arc bakiyesi yetiyorsa direkt `finalizing`, yetmiyorsa tam stepper
-- [x] Alıcı adresi ve miktar input alanları
-- [x] "Yetersiz Bakiye" uyarısı
-- [x] Animasyonlu stepper arayüzü (Loader2 spin, CheckCircle2, XCircle)
-- [x] Başarı / Hata banner'ları
-- [x] 2 saniyelik yapay gecikmelerle CCTP simülasyonu
+### Faz 2 — Universal Send
+- [x] `useUniversalSend` durum makinesi
+- [x] Akıllı routing (Arc bakiyesi yetiyorsa direkt finalizing)
+- [x] Animasyonlu stepper arayüzü
+- [x] 2s yapay gecikmelerle CCTP simülasyonu
 
-### Faz 3 — Opt-in Privacy (Seçmeli Gizlilik)
-- [x] `usePrivacyTransfer` hook — isPrivateMode state, viewing key generation (crypto.getRandomValues), reveal simulation
-- [x] iOS-style Privacy Toggle switch (mor parıltı efektli)
-- [x] Gizli modda gradient buton (`from-purple-600 to-indigo-600`)
-- [x] Viewing Key gösterimi + panoya kopyalama
-- [x] Auditor Tools paneli — Viewing Key ile işlem detaylarını doğrulama
-- [x] Doğrulama detay kartı (Gönderen, Alıcı, Tutar, Zaman + "Doğrulandı" rozeti)
+### Faz 3 — Opt-in Privacy
+- [x] `usePrivacyTransfer` hook — viewing key generation & reveal
+- [x] iOS-style Privacy Toggle
+- [x] Viewing Key gösterimi + kopyalama
+- [x] Auditor Tools paneli
+
+### Faz 4 — AI Agent & Agentic Economy
+- [x] `useArcAgent` hook — ERC-8004 onchain identity, ERC-8183 job settlement
+- [x] Doğal dil finansal komut analizi (regex/keyword matching)
+- [x] Dinamik görev onay kartları (Job Approval Card)
+- [x] Otonom görev takip paneli (ping animasyonu)
+- [x] Chat UI — mesajlaşma penceresi, ajan avatarı, auto-scroll
+- [x] Collapsible panel tasarımı
