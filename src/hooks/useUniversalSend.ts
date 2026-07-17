@@ -1,6 +1,10 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
+import { useAccount, useWalletClient } from "wagmi";
+import { parseUnits } from "viem";
+import { BridgeKit, ArcTestnet, BaseSepolia, ArbitrumSepolia, EthereumSepolia } from "@circle-fin/bridge-kit";
+import { createViemAdapterFromProvider } from "@circle-fin/adapter-viem-v2";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -20,6 +24,23 @@ export interface UniversalSendResult {
   resetSend: () => void;
 }
 
+// USDC ERC-20 Address on Arc L1 Testnet
+const USDC_ADDRESS = "0x3600000000000000000000000000000000000000";
+
+// Simple ERC-20 ABI fragment for same-chain transfer
+const erc20Abi = [
+  {
+    name: "transfer",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "recipient", type: "address" },
+      { name: "amount", type: "uint256" }
+    ],
+    outputs: [{ name: "", type: "bool" }]
+  }
+] as const;
+
 // ---------------------------------------------------------------------------
 // useUniversalSend
 // ---------------------------------------------------------------------------
@@ -30,31 +51,19 @@ export function useUniversalSend(
 ): UniversalSendResult {
   const [sendStatus, setSendStatus] = useState<SendStatus>("idle");
   const [sendError, setSendError] = useState<string | null>(null);
-  const cancelledRef = useRef(false);
+  
+  const { chainId } = useAccount();
+  const { data: walletClient } = useWalletClient();
 
   const resetSend = useCallback(() => {
     setSendStatus("idle");
     setSendError(null);
-    cancelledRef.current = false;
-  }, []);
-
-  /** Sleep helper — returns false if cancelled mid-way */
-  const sleep = useCallback((ms: number): Promise<boolean> => {
-    return new Promise((resolve) => {
-      const id = setTimeout(() => {
-        if (!cancelledRef.current) resolve(true);
-        else resolve(false);
-      }, ms);
-      // Store timer so we could clear it, but since cancelledRef is
-      // checked after the sleep, this is sufficient.
-      (sleep as unknown as Record<string, unknown>)._timer = id;
-    });
   }, []);
 
   const executeSend = useCallback(
     async (toAddress: string, amount: number) => {
       // Guard: wallet must be connected
-      if (!isConnected) {
+      if (!isConnected || !walletClient) {
         setSendError("Wallet not connected.");
         setSendStatus("error");
         return;
@@ -74,46 +83,100 @@ export function useUniversalSend(
         return;
       }
 
-      // Guard: sufficient unified balance
-      if (amount > totalUnified) {
-        setSendError(
-          `Insufficient balance. You have $${totalUnified.toFixed(2)} USDC across all chains.`,
-        );
-        setSendStatus("error");
-        return;
-      }
-
-      cancelledRef.current = false;
       setSendError(null);
 
-      // ─── Decision: do we need to aggregate from other chains? ───
-      const arcCovers = realArcBalance >= amount;
+      try {
+        const currentChainId = chainId;
 
-      if (arcCovers) {
-        // Arc balance alone is enough — skip aggregation & bridging
-        setSendStatus("finalizing");
-        const ok = await sleep(2000);
-        if (!ok) return;
+        if (currentChainId === 5_042_002) {
+          // ─── Case 1: Already on Arc Testnet ───
+          // Arc balance alone covers the send — do a simple same-chain USDC transfer
+          setSendStatus("finalizing");
+          
+          const txHash = await walletClient.writeContract({
+            address: USDC_ADDRESS,
+            abi: erc20Abi,
+            functionName: "transfer",
+            args: [toAddress as `0x${string}`, parseUnits(amount.toString(), 6)],
+          });
 
-        setSendStatus("success");
-      } else {
-        // Need funds from other chains — full stepper flow
-        setSendStatus("aggregating");
-        let ok = await sleep(2000);
-        if (!ok) return;
+          console.log("Same-chain transfer completed on Arc Testnet:", txHash);
+          setSendStatus("success");
+        } else {
+          // ─── Case 2: Bridge via CCTP from Source Chain to Arc Testnet ───
+          let sourceChain: any;
+          if (currentChainId === 84532) {
+            sourceChain = BaseSepolia;
+          } else if (currentChainId === 421614) {
+            sourceChain = ArbitrumSepolia;
+          } else if (currentChainId === 11155111) {
+            sourceChain = EthereumSepolia;
+          } else {
+            throw new Error(
+              "Unsupported network. Please switch to Arc Testnet, Base Sepolia, Arbitrum Sepolia, or Ethereum Sepolia."
+            );
+          }
 
-        setSendStatus("bridging");
-        ok = await sleep(2000);
-        if (!ok) return;
+          if (typeof window === "undefined" || !(window as any).ethereum) {
+            throw new Error("No browser wallet provider found. Please install MetaMask.");
+          }
 
-        setSendStatus("finalizing");
-        ok = await sleep(2000);
-        if (!ok) return;
+          setSendStatus("aggregating");
 
-        setSendStatus("success");
+          // 1. Initialize the Bridge Kit
+          const kit = new BridgeKit();
+
+          // 2. Initialize the Viem Adapter from browser wallet (window.ethereum)
+          const adapter = await createViemAdapterFromProvider({
+            provider: (window as any).ethereum,
+            capabilities: {
+              addressContext: "user-controlled",
+              supportedChains: [ArcTestnet, BaseSepolia, ArbitrumSepolia, EthereumSepolia],
+            },
+          });
+
+          // 3. Subscribe to bridge event lifecycle to update UI stepper
+          kit.on("approve", () => {
+            setSendStatus("aggregating");
+          });
+
+          kit.on("burn", () => {
+            setSendStatus("bridging");
+          });
+
+          kit.on("fetchAttestation", () => {
+            setSendStatus("finalizing");
+          });
+
+          kit.on("mint", () => {
+            setSendStatus("success");
+          });
+
+          console.log(`Executing CCTP bridge from ${sourceChain.name} to Arc Testnet for ${amount} USDC`);
+
+          // 4. Perform the cross-chain CCTP transfer
+          const result = await kit.bridge({
+            from: { adapter, chain: sourceChain },
+            to: { adapter, chain: ArcTestnet, recipientAddress: toAddress },
+            amount: amount.toString(),
+            config: { transferSpeed: "FAST" },
+          });
+
+          if (result.state === "error") {
+            const failedStep = result.steps.find((s) => s.state === "error");
+            const errorMessage = failedStep?.errorMessage || "CCTP transfer failed during execution.";
+            throw new Error(errorMessage);
+          }
+
+          setSendStatus("success");
+        }
+      } catch (error: any) {
+        console.error("Universal Send error:", error);
+        setSendError(error.message || "An unexpected error occurred during execution.");
+        setSendStatus("error");
       }
     },
-    [totalUnified, realArcBalance, isConnected, sleep],
+    [isConnected, walletClient, chainId],
   );
 
   return { sendStatus, sendError, executeSend, resetSend };
