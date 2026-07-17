@@ -47,3 +47,12 @@ npm run dev
 - [x] Network Breakdown kartı (her ağ için renkli dot + bakiye)
 - [x] "Real" badge ile Arc Testnet gerçek bakiyesi işaretleme
 - [x] "Add Funds via CCTP" aksiyon butonu
+
+### Faz 2 — Universal Send (Evrensel Gönderim)
+- [x] `useUniversalSend` hook — durum makinesi (`idle` → `aggregating` → `bridging` → `finalizing` → `success`)
+- [x] Bakiye kontrolü: Arc bakiyesi yetiyorsa direkt `finalizing`, yetmiyorsa tam stepper
+- [x] Alıcı adresi ve miktar input alanları
+- [x] "Yetersiz Bakiye" uyarısı
+- [x] Animasyonlu stepper arayüzü (Loader2 spin, CheckCircle2, XCircle)
+- [x] Başarı / Hata banner'ları
+- [x] 2 saniyelik yapay gecikmelerle CCTP simülasyonu
