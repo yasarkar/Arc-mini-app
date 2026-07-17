@@ -84,3 +84,10 @@ vercel --prod
 1. **Cüzdan Bağlantısı:** Tarayıcıda MetaMask'i aç → ArcFlow'a bağlan → adresin kısaltılmış halini ve "Arc Testnet / Gas: USDC" badge'lerini doğrula
 2. **Unified Balance:** Cüzdan bağlıyken toplam bakiyenin göründüğünü ve Network Breakdown kartının açıldığını kontrol et
 3. **AI Agent:** Arc Assistant paneline *"Her hafta Solana'daki USDC'lerimin %10'unu Arc'a köprüle"* yaz → ERC-8183 onay kartının geldiğini ve "Görevi Zincir Üstünde Onayla" butonunun çalıştığını test et
+
+### Multi-Wallet Modal
+- [x] WalletModal component with left panel (wallet list) + right panel (educational)
+- [x] EVM wallets: MetaMask, OKX, Coinbase, WalletConnect, Rainbow (via Wagmi connectors)
+- [x] Non-EVM wallets: Phantom, Backpack, Keplr (simulated connection)
+- [x] "Yüklendi" / "Popüler" sections
+- [x] Providers: injected(), coinbaseWallet(), walletConnect() configured
