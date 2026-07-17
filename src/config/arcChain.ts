@@ -1,10 +1,16 @@
 import { defineChain } from "viem";
 
+// ---------------------------------------------------------------------------
+// Arc Testnet — env-based RPC URL with fallback
+// ---------------------------------------------------------------------------
+const ARC_RPC_URL =
+  process.env.NEXT_PUBLIC_ARC_RPC_URL ?? "https://testnet.arc.io/rpc";
+
 /**
  * Arc Testnet — Circle'in USDC-native Layer-1 blockchain'i.
  *
  * Blockchain Gezgini: https://testnet.arcscan.app
- * RPC (Placeholder): https://testnet.arc.io/rpc
+ * RPC: ARC_RPC_URL env değişkeni ile özelleştirilebilir.
  *
  * ÖNEMLİ: Bu zincir EVM uyumludur ancak native gas token ETH değil USDC'dir.
  * NativeCurrency decimals = 6 (USDC standardı).
@@ -19,8 +25,7 @@ export const arcTestnet = defineChain({
   },
   rpcUrls: {
     default: {
-      // Not: Geçici placeholder RPC — üretimde güncellenmelidir.
-      http: ["https://testnet.arc.io/rpc"],
+      http: [ARC_RPC_URL],
     },
   },
   blockExplorers: {

@@ -8,6 +8,7 @@ Arc, programlanabilir para için tasarlanmış EVM-uyumlu bir Layer-1 blockchain
 
 ```bash
 npm install
+cp .env.example .env.local   # optional: customize RPC URL
 npm run dev
 ```
 
@@ -17,7 +18,7 @@ npm run dev
 |-----------|-------|
 | Ağ | Arc Testnet |
 | Chain ID | `111111` (placeholder) |
-| RPC | `https://testnet.arc.io/rpc` (placeholder) |
+| RPC | `NEXT_PUBLIC_ARC_RPC_URL` env ile özelleştirilebilir |
 | Gezgin | [ArcScan](https://testnet.arcscan.app) |
 | Faucet | [Circle Faucet](https://faucet.circle.com) |
 
@@ -32,38 +33,54 @@ npm run dev
 
 ## Özellikler
 
-### Faz 1 — Adım 1 (Proje İskeleti)
-- [x] Proje iskeleti ve klasör yapısı
+### Faz 1 — Proje İskeleti & Unified Balance
 - [x] Custom Arc Testnet zincir tanımı (`src/config/arcChain.ts`)
-- [x] Wagmi + TanStack Query providers yapısı
-- [x] Premium koyu mod fintech arayüzü
-- [x] Cüzdan bağlantısı (injected) ve adres görüntüleme
+- [x] Wagmi + TanStack Query providers
+- [x] Premium dark fintech arayüz
+- [x] Cüzdan bağlantısı (injected) + adres görüntüleme
 - [x] Network / Gas Token badge'leri
-
-### Faz 1 — Adım 3 (Unified Balance)
-- [x] Gerçek Arc Testnet USDC bakiyesi sorgulama
-- [x] Çoklu zincir simüle bakiyeler (Base, Arbitrum, Solana)
-- [x] Toplam Birleşik Bakiye gösterimi
-- [x] Network Breakdown kartı
-- [x] "Real" badge ile Arc Testnet gerçek bakiyesi
-- [x] "Add Funds via CCTP" aksiyon butonu
+- [x] Gerçek Arc Testnet USDC bakiyesi + mock Base/Arbitrum/Solana
+- [x] Toplam Birleşik Bakiye + Network Breakdown kartı
 
 ### Faz 2 — Universal Send
-- [x] `useUniversalSend` durum makinesi
-- [x] Akıllı routing (Arc bakiyesi yetiyorsa direkt finalizing)
-- [x] Animasyonlu stepper arayüzü
-- [x] 2s yapay gecikmelerle CCTP simülasyonu
+- [x] Akıllı routing + animasyonlu stepper (CCTP simülasyonu)
 
 ### Faz 3 — Opt-in Privacy
-- [x] `usePrivacyTransfer` hook — viewing key generation & reveal
-- [x] iOS-style Privacy Toggle
-- [x] Viewing Key gösterimi + kopyalama
-- [x] Auditor Tools paneli
+- [x] Privacy Toggle, Viewing Key, Auditor Tools
 
 ### Faz 4 — AI Agent & Agentic Economy
-- [x] `useArcAgent` hook — ERC-8004 onchain identity, ERC-8183 job settlement
-- [x] Doğal dil finansal komut analizi (regex/keyword matching)
-- [x] Dinamik görev onay kartları (Job Approval Card)
-- [x] Otonom görev takip paneli (ping animasyonu)
-- [x] Chat UI — mesajlaşma penceresi, ajan avatarı, auto-scroll
-- [x] Collapsible panel tasarımı
+- [x] ERC-8004/8183 simülasyonu, doğal dil komutları, chat UI
+
+## Production Deployment
+
+### Vercel CLI ile
+
+```bash
+# 1. Vercel CLI'ı kur
+npm install -g vercel
+
+# 2. Vercel'e giriş yap
+vercel login
+
+# 3. Projeyi deploy et (preview)
+vercel
+
+# 4. Production'a al
+vercel --prod
+```
+
+### GitHub + Vercel Entegrasyonu ile (önerilen)
+
+1. [vercel.com](https://vercel.com) adresine git → "Add New Project"
+2. GitHub reposu `yasarkar/Arc-mini-app`'i içe aktar
+3. Framework Preset: **Next.js** (otomatik algılanır)
+4. Root Directory: `./` (varsayılan)
+5. Environment Variables:
+   - `NEXT_PUBLIC_ARC_RPC_URL` → `https://testnet.arc.io/rpc`
+6. **Deploy** → her `git push`'ta otomatik yeniden dağıtım
+
+### Canlı Ortam Testleri
+
+1. **Cüzdan Bağlantısı:** Tarayıcıda MetaMask'i aç → ArcFlow'a bağlan → adresin kısaltılmış halini ve "Arc Testnet / Gas: USDC" badge'lerini doğrula
+2. **Unified Balance:** Cüzdan bağlıyken toplam bakiyenin göründüğünü ve Network Breakdown kartının açıldığını kontrol et
+3. **AI Agent:** Arc Assistant paneline *"Her hafta Solana'daki USDC'lerimin %10'unu Arc'a köprüle"* yaz → ERC-8183 onay kartının geldiğini ve "Görevi Zincir Üstünde Onayla" butonunun çalıştığını test et
