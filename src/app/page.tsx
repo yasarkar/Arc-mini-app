@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { useAccount, useDisconnect } from "wagmi";
 import { injected } from "wagmi/connectors";
 import {
   Wallet,
@@ -33,6 +33,7 @@ import { useUnifiedBalance } from "@/hooks/useUnifiedBalance";
 import { useUniversalSend } from "@/hooks/useUniversalSend";
 import { usePrivacyTransfer } from "@/hooks/usePrivacyTransfer";
 import { useArcAgent } from "@/hooks/useArcAgent";
+import WalletModal from "@/components/WalletModal";
 import type { ChainBalance } from "@/hooks/useUnifiedBalance";
 import type { SendStatus } from "@/hooks/useUniversalSend";
 import type { PrivateTxDetails } from "@/hooks/usePrivacyTransfer";
@@ -913,11 +914,12 @@ function ArcAgentPanel() {
 function ConnectWallet({
   isConnected,
   address,
+  onOpenModal,
 }: {
   isConnected: boolean;
   address?: string;
+  onOpenModal: () => void;
 }) {
-  const { connectAsync } = useConnect();
   const { disconnect } = useDisconnect();
 
   if (isConnected && address) {
@@ -936,10 +938,7 @@ function ConnectWallet({
   return (
     <button
       type="button"
-      onClick={async () => {
-        try { await connectAsync({ connector: injected() }); }
-        catch { /* silent */ }
-      }}
+      onClick={onOpenModal}
       className="wallet-button-primary"
     >
       <Wallet className="h-4 w-4" /> Connect Wallet
@@ -977,6 +976,8 @@ export default function Home() {
     revealTransactionDetails, storedKeys,
   } = usePrivacyTransfer();
 
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+
   const arcChain = chains.find((c) => c.id === "arc");
   const realArcBalance = arcChain?.balance ?? 0;
 
@@ -986,7 +987,11 @@ export default function Home() {
         <span className="text-lg font-semibold tracking-tight text-white">
           <span className="text-gradient">ArcFlow</span>
         </span>
-        <ConnectWallet isConnected={isConnected} address={address} />
+        <ConnectWallet
+          isConnected={isConnected}
+          address={address}
+          onOpenModal={() => setIsWalletModalOpen(true)}
+        />
       </header>
 
       <main className="flex flex-1 flex-col items-center justify-center px-6 pb-24 pt-8 sm:px-10">
@@ -1002,6 +1007,11 @@ export default function Home() {
       </main>
 
       <Footer />
+
+      <WalletModal
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+      />
     </div>
   );
 }
