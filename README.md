@@ -56,3 +56,11 @@ npm run dev
 - [x] Animasyonlu stepper arayüzü (Loader2 spin, CheckCircle2, XCircle)
 - [x] Başarı / Hata banner'ları
 - [x] 2 saniyelik yapay gecikmelerle CCTP simülasyonu
+
+### Faz 3 — Opt-in Privacy (Seçmeli Gizlilik)
+- [x] `usePrivacyTransfer` hook — isPrivateMode state, viewing key generation (crypto.getRandomValues), reveal simulation
+- [x] iOS-style Privacy Toggle switch (mor parıltı efektli)
+- [x] Gizli modda gradient buton (`from-purple-600 to-indigo-600`)
+- [x] Viewing Key gösterimi + panoya kopyalama
+- [x] Auditor Tools paneli — Viewing Key ile işlem detaylarını doğrulama
+- [x] Doğrulama detay kartı (Gönderen, Alıcı, Tutar, Zaman + "Doğrulandı" rozeti)

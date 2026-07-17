@@ -14,17 +14,33 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  Shield,
+  EyeOff,
+  Copy,
+  Check,
+  KeyRound,
+  Search,
 } from "lucide-react";
 import { useUnifiedBalance } from "@/hooks/useUnifiedBalance";
 import { useUniversalSend } from "@/hooks/useUniversalSend";
+import { usePrivacyTransfer } from "@/hooks/usePrivacyTransfer";
 import type { ChainBalance } from "@/hooks/useUnifiedBalance";
 import type { SendStatus } from "@/hooks/useUniversalSend";
+import type { PrivateTxDetails } from "@/hooks/usePrivacyTransfer";
 
 // =========================================================================
 // Utility
 // =========================================================================
 function truncateAddress(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
+function formatTime(ts: number) {
+  return new Date(ts).toLocaleTimeString("tr-TR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 // =========================================================================
@@ -175,6 +191,63 @@ function AddFundsCard({ isConnected }: { isConnected: boolean }) {
 }
 
 // =========================================================================
+// Privacy Toggle — iOS-style switch
+// =========================================================================
+function PrivacyToggle({
+  isPrivateMode,
+  onToggle,
+}: {
+  isPrivateMode: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div
+      className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-all duration-300 ${
+        isPrivateMode
+          ? "border-purple-500/30 bg-purple-500/5 shadow-[0_0_15px_rgba(168,85,247,0.12)]"
+          : "border-white/[0.06] bg-white/[0.02]"
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-300 ${
+            isPrivateMode ? "bg-purple-500/20" : "bg-zinc-800"
+          }`}
+        >
+          {isPrivateMode ? (
+            <Shield className="h-4 w-4 text-purple-400" />
+          ) : (
+            <EyeOff className="h-4 w-4 text-zinc-500" />
+          )}
+        </div>
+        <div>
+          <p className="text-sm font-medium text-white">Gizli Gönderim</p>
+          <p className="text-xs text-zinc-500">Opt-in Privacy ile koru</p>
+        </div>
+      </div>
+
+      {/* iOS-style switch */}
+      <button
+        type="button"
+        role="switch"
+        aria-checked={isPrivateMode}
+        onClick={onToggle}
+        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors duration-300 ease-out focus:outline-none ${
+          isPrivateMode ? "bg-purple-500" : "bg-zinc-700"
+        }`}
+      >
+        <span
+          className={`inline-block h-4.5 w-4.5 transform rounded-full bg-white shadow-sm transition-transform duration-300 ease-out ${
+            isPrivateMode ? "translate-x-[22px]" : "translate-x-[3px]"
+          }`}
+          style={{ height: "18px", width: "18px" }}
+        />
+      </button>
+    </div>
+  );
+}
+
+// =========================================================================
 // Stepper — animated transaction progress
 // =========================================================================
 const STEP_DEFS: {
@@ -199,19 +272,24 @@ const STEP_DEFS: {
   },
 ];
 
-function Stepper({ status }: { status: SendStatus }) {
+function Stepper({
+  status,
+  isPrivateMode,
+}: {
+  status: SendStatus;
+  isPrivateMode: boolean;
+}) {
   const isActive = status !== "idle" && status !== "success" && status !== "error";
   const isError = status === "error";
   const isSuccess = status === "success";
+  const accentColor = isPrivateMode ? "text-purple-400" : "text-arc-blue";
 
   return (
     <div className="space-y-3">
       {STEP_DEFS.map((step, idx) => {
-        // Determine step state
         const stepIndex = STEP_DEFS.findIndex((s) => s.key === status);
         const isCurrentStep = step.key === status;
         const isPastStep = !isError && !isSuccess && stepIndex >= 0 && idx < stepIndex;
-        const isPending = isActive && !isCurrentStep && !isPastStep;
 
         let icon: React.ReactNode;
         let rowClass = "opacity-40";
@@ -223,7 +301,11 @@ function Stepper({ status }: { status: SendStatus }) {
           icon = <XCircle className="h-5 w-5 text-red-500" />;
           rowClass = "opacity-100";
         } else if (isCurrentStep) {
-          icon = <Loader2 className="h-5 w-5 text-arc-blue animate-spin" />;
+          icon = (
+            <Loader2
+              className={`h-5 w-5 animate-spin ${accentColor}`}
+            />
+          );
           rowClass = "opacity-100";
         } else if (isPastStep) {
           icon = <CheckCircle2 className="h-5 w-5 text-arc-green" />;
@@ -269,54 +351,136 @@ function Stepper({ status }: { status: SendStatus }) {
 }
 
 // =========================================================================
-// Send Funds — form + stepper
+// Viewing Key Display
+// =========================================================================
+function ViewingKeyDisplay({ viewingKey }: { viewingKey: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viewingKey);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback: select text manually
+    }
+  }, [viewingKey]);
+
+  return (
+    <div className="mt-4 rounded-xl border border-purple-500/20 bg-purple-500/5 p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <Shield className="h-4 w-4 text-purple-400" />
+        <span className="text-xs font-medium text-purple-300">
+          Bu işlem Seçmeli Gizlilik (Opt-in Privacy) ile korundu.
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 rounded-lg border border-purple-500/15 bg-black/30 px-3 py-2 font-mono text-xs text-purple-200">
+          {viewingKey}
+        </div>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-purple-500/15 transition-colors hover:bg-purple-500/10"
+        >
+          {copied ? (
+            <Check className="h-4 w-4 text-arc-green" />
+          ) : (
+            <Copy className="h-4 w-4 text-purple-300" />
+          )}
+        </button>
+      </div>
+      <p className="mt-2 text-[10px] text-zinc-600">
+        Bu anahtarı denetçinizle veya bir üçüncü partiyle paylaşarak işlem
+        detaylarını doğrulatabilirsiniz.
+      </p>
+    </div>
+  );
+}
+
+// =========================================================================
+// Send Funds — form + stepper + privacy
 // =========================================================================
 function SendFunds({
   isConnected,
   totalUnified,
   realArcBalance,
+  isPrivateMode,
+  onTogglePrivacy,
+  generateViewingKey,
 }: {
   isConnected: boolean;
   totalUnified: number;
   realArcBalance: number;
+  isPrivateMode: boolean;
+  onTogglePrivacy: () => void;
+  generateViewingKey: (txHash: string, details: PrivateTxDetails) => string;
 }) {
   const [toAddress, setToAddress] = useState("");
   const [amountStr, setAmountStr] = useState("");
+  const [lastViewingKey, setLastViewingKey] = useState<string | null>(null);
+  const [txCompleted, setTxCompleted] = useState(false);
 
   const { sendStatus, sendError, executeSend, resetSend } =
     useUniversalSend(totalUnified, realArcBalance, isConnected);
 
-  const isBusy = sendStatus !== "idle" && sendStatus !== "success" && sendStatus !== "error";
+  // Generate viewing key when send completes in private mode
+  if (sendStatus === "success" && !txCompleted && isPrivateMode) {
+    const mockDetails: PrivateTxDetails = {
+      txHash: `0x${Array.from({ length: 64 }, () =>
+        Math.floor(Math.random() * 16).toString(16),
+      ).join("")}`,
+      sender: "0x742d35Cc6634C0532925a3b844Bc9e7595f2bD18",
+      recipient: toAddress.trim(),
+      amount: parseFloat(amountStr) || 0,
+      symbol: "USDC",
+      timestamp: Date.now(),
+    };
+    const vkey = generateViewingKey(mockDetails.txHash, mockDetails);
+    setLastViewingKey(vkey);
+    setTxCompleted(true);
+  }
 
   const handleSend = useCallback(async () => {
     const amount = parseFloat(amountStr);
     if (isNaN(amount) || amount <= 0) return;
+    setTxCompleted(false);
+    setLastViewingKey(null);
     await executeSend(toAddress.trim(), amount);
   }, [amountStr, toAddress, executeSend]);
-
-  const handleReset = useCallback(() => {
-    setToAddress("");
-    setAmountStr("");
-    resetSend();
-  }, [resetSend]);
 
   const amount = parseFloat(amountStr) || 0;
   const insufficient = isConnected && amount > totalUnified;
 
   if (!isConnected) return null;
 
+  const accentBorder = isPrivateMode ? "border-purple-500/30" : "border-white/[0.06]";
+  const accentHeader = isPrivateMode ? "text-purple-400" : "text-zinc-500";
+
   return (
     <div className="mx-auto mt-8 w-full max-w-md">
-      <div className="glass-panel overflow-hidden">
+      <div
+        className={`glass-panel overflow-hidden transition-all duration-300 ${
+          isPrivateMode ? "shadow-[0_0_15px_rgba(168,85,247,0.08)]" : ""
+        }`}
+      >
         {/* Header */}
-        <div className="border-b border-white/[0.06] px-5 py-3.5">
-          <h2 className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-500">
+        <div className={`border-b px-5 py-3.5 transition-colors duration-300 ${accentBorder}`}>
+          <h2 className={`text-xs font-medium uppercase tracking-[0.15em] transition-colors duration-300 ${accentHeader}`}>
             Para Gönder
           </h2>
         </div>
 
         {/* Body */}
         <div className="p-5">
+          {/* Privacy Toggle */}
+          <div className="mb-4">
+            <PrivacyToggle
+              isPrivateMode={isPrivateMode}
+              onToggle={onTogglePrivacy}
+            />
+          </div>
+
           {sendStatus === "idle" || sendStatus === "error" ? (
             /* ── Form ── */
             <div className="space-y-4">
@@ -373,7 +537,11 @@ function SendFunds({
                 type="button"
                 disabled={!toAddress.trim() || amount <= 0 || insufficient}
                 onClick={handleSend}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-arc-blue px-5 py-3 text-sm font-medium text-white transition-all duration-200 hover:bg-arc-blue/90 hover:shadow-[0_0_24px_-4px_#0052FF] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
+                className={`flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-medium text-white transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 ${
+                  isPrivateMode
+                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:shadow-[0_0_24px_-4px_#7c3aed]"
+                    : "bg-arc-blue hover:bg-arc-blue/90 hover:shadow-[0_0_24px_-4px_#0052FF]"
+                }`}
               >
                 <Send className="h-4 w-4" />
                 {insufficient
@@ -384,19 +552,154 @@ function SendFunds({
           ) : (
             /* ── Stepper / Result ── */
             <div className="space-y-4">
-              <Stepper status={sendStatus} />
+              <Stepper status={sendStatus} isPrivateMode={isPrivateMode} />
+
+              {/* Viewing Key (only on success + private mode) */}
+              {sendStatus === "success" && lastViewingKey && (
+                <ViewingKeyDisplay viewingKey={lastViewingKey} />
+              )}
 
               {/* Reset button on success */}
               {sendStatus === "success" && (
                 <button
                   type="button"
-                  onClick={handleReset}
+                  onClick={() => {
+                    setToAddress("");
+                    setAmountStr("");
+                    setLastViewingKey(null);
+                    resetSend();
+                  }}
                   className="mt-2 w-full rounded-xl border border-zinc-800 px-5 py-2.5 text-sm font-medium text-zinc-400 transition-all duration-200 hover:border-zinc-700 hover:text-white active:scale-[0.98]"
                 >
                   Yeni Gönderim
                 </button>
               )}
             </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================================
+// Auditor Panel
+// =========================================================================
+function AuditorPanel({
+  storedKeys,
+  revealTransactionDetails,
+}: {
+  storedKeys: { key: string; details: PrivateTxDetails }[];
+  revealTransactionDetails: (key: string) => PrivateTxDetails | null;
+}) {
+  const [inputKey, setInputKey] = useState("");
+  const [revealedTx, setRevealedTx] = useState<PrivateTxDetails | null>(null);
+  const [revealError, setRevealError] = useState<string | null>(null);
+
+  const handleReveal = useCallback(() => {
+    const trimmed = inputKey.trim();
+    if (!trimmed) return;
+    const result = revealTransactionDetails(trimmed);
+    if (result) {
+      setRevealedTx(result);
+      setRevealError(null);
+    } else {
+      setRevealedTx(null);
+      setRevealError("Geçersiz veya süresi dolmuş görüntüleme anahtarı.");
+    }
+  }, [inputKey, revealTransactionDetails]);
+
+  return (
+    <div className="mx-auto mt-10 w-full max-w-md">
+      <div className="glass-panel overflow-hidden border border-amber-500/10">
+        {/* Header */}
+        <div className="border-b border-white/[0.06] px-5 py-3.5">
+          <div className="flex items-center gap-2">
+            <Search className="h-3.5 w-3.5 text-zinc-500" />
+            <h2 className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-500">
+              Gizli İşlem Denetleme Paneli
+            </h2>
+          </div>
+          <p className="mt-1 text-[10px] text-zinc-600">
+            Auditor Tools — Bir Viewing Key girerek gizli işlem detaylarını
+            doğrulayın.
+          </p>
+        </div>
+
+        {/* Body */}
+        <div className="p-5 space-y-4">
+          {/* Input + button */}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="vkey_arc_..."
+              value={inputKey}
+              onChange={(e) => setInputKey(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleReveal()}
+              className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/80 px-4 py-2.5 font-mono text-xs text-white placeholder-zinc-600 outline-none transition-all duration-200 focus:border-amber-500/30 focus:shadow-[0_0_12px_-4px_#f59e0b]"
+            />
+            <button
+              type="button"
+              onClick={handleReveal}
+              disabled={!inputKey.trim()}
+              className="flex items-center gap-1.5 rounded-xl bg-amber-600/80 px-4 py-2.5 text-xs font-medium text-white transition-all duration-200 hover:bg-amber-600 active:scale-[0.97] disabled:opacity-30"
+            >
+              <KeyRound className="h-3.5 w-3.5" />
+              Reveal
+            </button>
+          </div>
+
+          {/* Error */}
+          {revealError && (
+            <div className="flex items-start gap-2 rounded-xl bg-red-500/10 px-3 py-2.5 ring-1 ring-red-500/20">
+              <XCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-red-400" />
+              <p className="text-xs text-red-300">{revealError}</p>
+            </div>
+          )}
+
+          {/* Revealed transaction details */}
+          {revealedTx && (
+            <div className="rounded-xl border border-arc-green/20 bg-arc-green/5 p-4 transition-all duration-500">
+              <div className="mb-3 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-arc-green" />
+                <span className="text-xs font-medium text-arc-green">
+                  Doğrulandı
+                </span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-[11px] text-zinc-500">Gönderen</span>
+                  <span className="text-xs font-mono text-white">
+                    {truncateAddress(revealedTx.sender)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[11px] text-zinc-500">Alıcı</span>
+                  <span className="text-xs font-mono text-white">
+                    {truncateAddress(revealedTx.recipient)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[11px] text-zinc-500">Tutar</span>
+                  <span className="text-xs font-medium text-white">
+                    {revealedTx.amount.toFixed(2)} {revealedTx.symbol}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[11px] text-zinc-500">Zaman</span>
+                  <span className="text-xs text-zinc-300">
+                    {formatTime(revealedTx.timestamp)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Stored keys count */}
+          {storedKeys.length > 0 && (
+            <p className="text-[10px] text-zinc-700 text-center">
+              {storedKeys.length} görüntüleme anahtarı kullanılabilir
+            </p>
           )}
         </div>
       </div>
@@ -481,6 +784,13 @@ function Footer() {
 export default function Home() {
   const { isConnected, address } = useAccount();
   const { totalUnified, chains, isLoading } = useUnifiedBalance();
+  const {
+    isPrivateMode,
+    togglePrivacy,
+    generateViewingKey,
+    revealTransactionDetails,
+    storedKeys,
+  } = usePrivacyTransfer();
 
   // Extract real Arc balance from chains
   const arcChain = chains.find((c) => c.id === "arc");
@@ -514,9 +824,17 @@ export default function Home() {
           isConnected={isConnected}
           totalUnified={totalUnified}
           realArcBalance={realArcBalance}
+          isPrivateMode={isPrivateMode}
+          onTogglePrivacy={togglePrivacy}
+          generateViewingKey={generateViewingKey}
         />
 
         <AddFundsCard isConnected={isConnected} />
+
+        <AuditorPanel
+          storedKeys={storedKeys}
+          revealTransactionDetails={revealTransactionDetails}
+        />
       </main>
 
       <Footer />
