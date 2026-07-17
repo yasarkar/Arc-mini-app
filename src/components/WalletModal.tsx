@@ -26,7 +26,10 @@ interface WalletOption {
   /** Hex colour for the icon background (fallback) */
   color: string;
   type: "evm" | "non-evm";
-  connector?: () => ReturnType<typeof injected>;
+  connector?: () =>
+    | ReturnType<typeof injected>
+    | ReturnType<typeof coinbaseWallet>
+    | ReturnType<typeof walletConnect>;
 }
 
 interface WalletModalProps {
@@ -41,12 +44,12 @@ const WALLETS: WalletOption[] = [
   {
     id: "metamask", name: "MetaMask",
     iconPath: "/wallets/metamask.svg", color: "#F6851B",
-    type: "evm", connector: () => injected(),
+    type: "evm", connector: () => injected({ target: "metaMask" }),
   },
   {
     id: "okx", name: "OKX Wallet",
-    iconPath: "/wallets/okx.svg", color: "#0C0F1C",
-    type: "evm", connector: () => injected(),
+    iconPath: "/wallets/okx.svg", color: "#ffffffff",
+    type: "evm", connector: () => injected({ target: "okxWallet" }),
   },
   {
     id: "coinbase", name: "Coinbase Wallet",
@@ -66,7 +69,7 @@ const WALLETS: WalletOption[] = [
   {
     id: "rainbow", name: "Rainbow",
     iconPath: "/wallets/rainbow.svg", color: "#001A3C",
-    type: "evm", connector: () => injected(),
+    type: "evm", connector: () => injected({ target: "rainbow" }),
   },
   // Non-EVM wallets (simulated)
   {
@@ -89,25 +92,41 @@ const WALLETS: WalletOption[] = [
 const POPULAR_IDS = new Set(["metamask", "phantom", "coinbase", "walletconnect"]);
 
 // ---------------------------------------------------------------------------
-// Non-EVM connection simulation
+// Wallet Installation Checks & Download Links
 // ---------------------------------------------------------------------------
-function useSimulatedConnect() {
-  const [simulatingId, setSimulatingId] = useState<string | null>(null);
+const DOWNLOAD_URLS: Record<string, string> = {
+  metamask: "https://metamask.io/download/",
+  okx: "https://www.okx.com/web3",
+  coinbase: "https://www.coinbase.com/wallet",
+  rainbow: "https://rainbow.me/",
+  phantom: "https://phantom.app/download",
+  backpack: "https://backpack.app/downloads",
+  keplr: "https://www.keplr.app/download",
+};
 
-  const simulateConnect = useCallback(
-    (walletId: string): Promise<boolean> => {
-      setSimulatingId(walletId);
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          setSimulatingId(null);
-          resolve(true);
-        }, 1500);
-      });
-    },
-    [],
-  );
+function isWalletInstalled(id: string): boolean {
+  if (typeof window === "undefined") return false;
+  const anyWindow = window as any;
+  const ethereum = anyWindow.ethereum;
 
-  return { simulatingId, simulateConnect };
+  switch (id) {
+    case "metamask":
+      return !!(ethereum?.isMetaMask || ethereum?.providers?.some((p: any) => p.isMetaMask));
+    case "okx":
+      return !!(anyWindow.okxwallet || ethereum?.isOkxWallet || ethereum?.providers?.some((p: any) => p.isOkxWallet));
+    case "coinbase":
+      return !!(anyWindow.coinbaseWalletExtension || ethereum?.isCoinbaseWallet || ethereum?.providers?.some((p: any) => p.isCoinbaseWallet));
+    case "rainbow":
+      return !!(ethereum?.isRainbow || ethereum?.providers?.some((p: any) => p.isRainbow));
+    case "phantom":
+      return !!(anyWindow.solana?.isPhantom || anyWindow.phantom?.solana);
+    case "backpack":
+      return !!(anyWindow.backpack || anyWindow.backpack?.solana || anyWindow.solana?.isBackpack);
+    case "keplr":
+      return !!anyWindow.keplr;
+    default:
+      return true;
+  }
 }
 
 // =========================================================================
@@ -289,7 +308,10 @@ function RightPanel() {
 // =========================================================================
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const { connectAsync, isPending } = useConnect();
-  const { simulatingId, simulateConnect } = useSimulatedConnect();
+  
+  const [connectingNonEvmId, setConnectingNonEvmId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
 
   // Close on Escape
   useEffect(() => {
@@ -300,36 +322,82 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
     return () => document.removeEventListener("keydown", handler);
   }, [isOpen, onClose]);
 
-  // Prevent body scroll when modal is open
+  // Prevent body scroll and reset states when modal is open/closed
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
+      setErrorMessage(null);
+      setDownloadUrl(null);
+      setConnectingNonEvmId(null);
     } else {
       document.body.style.overflow = "";
     }
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
-  const isAnyLoading = isPending || simulatingId !== null;
+  const isAnyLoading = isPending || connectingNonEvmId !== null;
 
   const handleConnect = useCallback(
     async (wallet: WalletOption) => {
       if (isAnyLoading) return;
+      setErrorMessage(null);
+      setDownloadUrl(null);
+
+      // Check if extension is installed (except for walletconnect)
+      if (wallet.id !== "walletconnect" && !isWalletInstalled(wallet.id)) {
+        setErrorMessage(`${wallet.name} cüzdanı tarayıcınızda yüklü değil.`);
+        setDownloadUrl(DOWNLOAD_URLS[wallet.id] || null);
+        return;
+      }
 
       if (wallet.type === "evm" && wallet.connector) {
         try {
           await connectAsync({ connector: wallet.connector() });
           onClose(); // close modal on success
-        } catch {
-          // user cancelled — stay open
+        } catch (err: any) {
+          console.error("EVM Connection error:", err);
+          setErrorMessage("Cüzdan bağlantısı reddedildi veya hata oluştu.");
         }
       } else {
-        // Non-EVM: simulate
-        await simulateConnect(wallet.id);
-        onClose();
+        // Non-EVM Connection
+        setConnectingNonEvmId(wallet.id);
+        try {
+          const anyWindow = window as any;
+          if (wallet.id === "phantom") {
+            const provider = anyWindow.phantom?.solana || anyWindow.solana;
+            const resp = await provider.connect();
+            const addr = resp.publicKey.toString();
+            localStorage.setItem("solana_address", addr);
+            window.dispatchEvent(new Event("wallet-connection-update"));
+            onClose();
+          } else if (wallet.id === "backpack") {
+            const provider = anyWindow.backpack || anyWindow.backpack?.solana || anyWindow.solana;
+            const resp = await provider.connect();
+            const addr = resp.publicKey.toString();
+            localStorage.setItem("solana_address", addr);
+            window.dispatchEvent(new Event("wallet-connection-update"));
+            onClose();
+          } else if (wallet.id === "keplr") {
+            const chainId = "cosmoshub-4";
+            await anyWindow.keplr.enable(chainId);
+            const offlineSigner = anyWindow.keplr.getOfflineSigner(chainId);
+            const accounts = await offlineSigner.getAccounts();
+            const addr = accounts[0].address;
+            localStorage.setItem("cosmos_address", addr);
+            window.dispatchEvent(new Event("wallet-connection-update"));
+            onClose();
+          }
+        } catch (err: any) {
+          console.error("Non-EVM connection error:", err);
+          setErrorMessage(`${wallet.name} cüzdan bağlantısı başarısız oldu.`);
+        } finally {
+          setConnectingNonEvmId(null);
+        }
       }
     },
-    [connectAsync, simulateConnect, onClose, isAnyLoading],
+    [connectAsync, onClose, isAnyLoading],
   );
 
   if (!isOpen) return null;
@@ -361,6 +429,27 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
             </button>
           </div>
 
+          {/* Alert / Warning Banner for uninstalled extensions */}
+          {errorMessage && (
+            <div className="mx-4 mt-4 flex items-center justify-between gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-[13px] text-amber-200">
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 flex-shrink-0 text-amber-400" />
+                <span>{errorMessage}</span>
+              </div>
+              {downloadUrl && (
+                <a
+                  href={downloadUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-shrink-0 items-center gap-1 rounded bg-amber-500/20 px-2.5 py-1 font-semibold text-amber-100 transition-colors hover:bg-amber-500/30"
+                >
+                  İndir
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
+          )}
+
           {/* Wallet list */}
           <div className="space-y-6 overflow-y-auto px-3 py-5">
             <WalletSection
@@ -378,7 +467,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
           </div>
 
           {/* Loading indicator */}
-          {(isPending || simulatingId) && (
+          {isAnyLoading && (
             <div className="flex items-center justify-center gap-2 border-t border-white/10 px-5 py-3">
               <Loader2 className="h-4 w-4 animate-spin text-sky-sync" />
               <span className="text-xs font-body text-zinc-300">Cüzdan bağlanıyor...</span>
@@ -390,7 +479,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
             <p className="text-[10px] font-body text-zinc-400">
               ArcFlow tarafından desteklenmektedir ·{" "}
               <a href="https://testnet.arcscan.app" target="_blank" rel="noopener noreferrer"
-                 className="underline underline-offset-2 hover:text-zinc-300">Arc Testnet</a>
+                className="underline underline-offset-2 hover:text-zinc-300">Arc Testnet</a>
             </p>
           </div>
         </div>

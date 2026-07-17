@@ -928,10 +928,19 @@ function ConnectWallet({
 }) {
   const { disconnect } = useDisconnect();
 
+  const handleDisconnect = () => {
+    disconnect();
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("solana_address");
+      localStorage.removeItem("cosmos_address");
+      window.dispatchEvent(new Event("wallet-connection-update"));
+    }
+  };
+
   if (isConnected && address) {
     return (
       <div className="flex flex-col items-end gap-3">
-        <button type="button" onClick={() => disconnect()} className="wallet-button-ghost">
+        <button type="button" onClick={handleDisconnect} className="wallet-button-ghost">
           <span className="h-2 w-2 rounded-full bg-arc-green shadow-[0_0_8px_#22C55E]" />
           {truncateAddress(address)}
           <Unplug className="h-3.5 w-3.5 text-white/40" />
@@ -975,8 +984,7 @@ function Footer() {
 // Page — ArcFlow Dashboard
 // =========================================================================
 export default function Home() {
-  const { isConnected, address } = useAccount();
-  const { totalUnified, chains, isLoading } = useUnifiedBalance();
+  const { totalUnified, chains, isLoading, isConnected, activeAddress } = useUnifiedBalance();
   const {
     isPrivateMode, togglePrivacy, generateViewingKey,
     revealTransactionDetails, storedKeys,
@@ -995,7 +1003,7 @@ export default function Home() {
         </span>
         <ConnectWallet
           isConnected={isConnected}
-          address={address}
+          address={activeAddress ?? undefined}
           onOpenModal={() => setIsWalletModalOpen(true)}
         />
       </header>

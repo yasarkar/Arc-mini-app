@@ -15,7 +15,9 @@ const WALLETCONNECT_PROJECT_ID =
 const config = createConfig({
   chains: [arcTestnet],
   connectors: [
-    injected(),
+    injected({ target: "metaMask" }),
+    injected({ target: "okxWallet" }),
+    injected({ target: "rainbow" }),
     coinbaseWallet({ appName: "ArcFlow" }),
     walletConnect({ projectId: WALLETCONNECT_PROJECT_ID }),
   ],
