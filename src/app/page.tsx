@@ -2,7 +2,6 @@
 
 import { useAccount, useConnect, useDisconnect, useBalance } from "wagmi";
 import { injected } from "wagmi/connectors";
-import { formatAddress } from "viem";
 import { arcTestnet } from "@/config/arcChain";
 
 // =========================================================================
