@@ -1,0 +1,143 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #0a0a0f;
+  color: #e4e4e7;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #1f1f2e;
+}
+
+.header h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #0052ff, #00d4aa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: linear-gradient(135deg, #12121e, #1a1a2e);
+  border-radius: 16px;
+  border: 1px solid #1f1f2e;
+}
+
+.hero h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+.hero p {
+  color: #a1a1aa;
+  max-width: 520px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+}
+
+.balance-card,
+.card {
+  background: #12121e;
+  border: 1px solid #1f1f2e;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.balance-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.balance-item + .balance-item {
+  border-top: 1px solid #1a1a2e;
+}
+
+.label {
+  color: #71717a;
+  font-size: 0.875rem;
+}
+
+.value {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.muted .value {
+  color: #a1a1aa;
+  font-weight: 400;
+}
+
+.info-note {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #0f172a;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.card h2 {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  color: #fff;
+}
+
+.coming-soon {
+  color: #52525b;
+  font-style: italic;
+  font-size: 0.875rem;
+}
+
+.connect-prompt {
+  text-align: center;
+  padding: 4rem 1rem;
+  color: #52525b;
+}
+
+.footer {
+  text-align: center;
+  padding-top: 1rem;
+  border-top: 1px solid #1f1f2e;
+  color: #52525b;
+  font-size: 0.8rem;
+}
