@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import Image from "next/image";
 import { useConnect } from "wagmi";
 import { injected, coinbaseWallet, walletConnect } from "wagmi/connectors";
 import {
@@ -20,9 +21,9 @@ import {
 interface WalletOption {
   id: string;
   name: string;
-  /** icon character or emoji fallback */
-  icon: string;
-  /** hex colour for the icon background */
+  /** Path to the SVG icon under /public/wallets/ */
+  iconPath: string;
+  /** Hex colour for the icon background (fallback) */
   color: string;
   type: "evm" | "non-evm";
   connector?: () => ReturnType<typeof injected>;
@@ -37,15 +38,52 @@ interface WalletModalProps {
 // Wallet definitions
 // ---------------------------------------------------------------------------
 const WALLETS: WalletOption[] = [
-  { id: "metamask", name: "MetaMask", icon: "🦊", color: "#F6851B", type: "evm", connector: () => injected() },
-  { id: "okx", name: "OKX Wallet", icon: "🧩", color: "#0C0F1C", type: "evm", connector: () => injected() },
-  { id: "coinbase", name: "Coinbase Wallet", icon: "🔵", color: "#0052FF", type: "evm", connector: () => coinbaseWallet({ appName: "ArcFlow" }) },
-  { id: "walletconnect", name: "WalletConnect", icon: "🔗", color: "#3B99FC", type: "evm", connector: () => walletConnect({ projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "YOUR_PROJECT_ID" }) },
-  { id: "rainbow", name: "Rainbow", icon: "🌈", color: "#001A3C", type: "evm", connector: () => injected() },
+  {
+    id: "metamask", name: "MetaMask",
+    iconPath: "/wallets/metamask.svg", color: "#F6851B",
+    type: "evm", connector: () => injected(),
+  },
+  {
+    id: "okx", name: "OKX Wallet",
+    iconPath: "/wallets/okx.svg", color: "#0C0F1C",
+    type: "evm", connector: () => injected(),
+  },
+  {
+    id: "coinbase", name: "Coinbase Wallet",
+    iconPath: "/wallets/coinbase.svg", color: "#0052FF",
+    type: "evm", connector: () => coinbaseWallet({ appName: "ArcFlow" }),
+  },
+  {
+    id: "walletconnect", name: "WalletConnect",
+    iconPath: "/wallets/walletconnect.svg", color: "#3B99FC",
+    type: "evm",
+    connector: () =>
+      walletConnect({
+        projectId:
+          process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "YOUR_PROJECT_ID",
+      }),
+  },
+  {
+    id: "rainbow", name: "Rainbow",
+    iconPath: "/wallets/rainbow.svg", color: "#001A3C",
+    type: "evm", connector: () => injected(),
+  },
   // Non-EVM wallets (simulated)
-  { id: "phantom", name: "Phantom", icon: "👻", color: "#AB9FF2", type: "non-evm" },
-  { id: "backpack", name: "Backpack", icon: "🎒", color: "#39D0D8", type: "non-evm" },
-  { id: "keplr", name: "Keplr", icon: "⭐", color: "#E8831A", type: "non-evm" },
+  {
+    id: "phantom", name: "Phantom",
+    iconPath: "/wallets/phantom.svg", color: "#AB9FF2",
+    type: "non-evm",
+  },
+  {
+    id: "backpack", name: "Backpack",
+    iconPath: "/wallets/backpack.svg", color: "#39D0D8",
+    type: "non-evm",
+  },
+  {
+    id: "keplr", name: "Keplr",
+    iconPath: "/wallets/keplr.svg", color: "#E8831A",
+    type: "non-evm",
+  },
 ];
 
 const POPULAR_IDS = new Set(["metamask", "phantom", "coinbase", "walletconnect"]);
@@ -73,16 +111,39 @@ function useSimulatedConnect() {
 }
 
 // =========================================================================
-// WalletIcon — circular icon with fallback
+// WalletIcon — renders local SVG with fallback
 // =========================================================================
-function WalletIcon({ wallet, size = "md" }: { wallet: WalletOption; size?: "sm" | "md" }) {
-  const dim = size === "sm" ? "h-8 w-8 text-sm" : "h-10 w-10 text-base";
+function WalletIcon({
+  wallet,
+  size = "md",
+}: {
+  wallet: WalletOption;
+  size?: "sm" | "md";
+}) {
+  const [imgError, setImgError] = useState(false);
+  const dim = size === "sm" ? "h-8 w-8" : "h-10 w-10";
+
   return (
     <div
       className={`flex ${dim} flex-shrink-0 items-center justify-center rounded-full`}
       style={{ backgroundColor: `${wallet.color}20` }}
     >
-      <span className="leading-none">{wallet.icon}</span>
+      {imgError ? (
+        /* Fallback: Lucide Wallet icon */
+        <Wallet
+          className={size === "sm" ? "h-4 w-4" : "h-5 w-5"}
+          style={{ color: wallet.color }}
+        />
+      ) : (
+        <Image
+          src={wallet.iconPath}
+          alt={wallet.name}
+          width={size === "sm" ? 22 : 28}
+          height={size === "sm" ? 22 : 28}
+          className="rounded-full object-contain"
+          onError={() => setImgError(true)}
+        />
+      )}
     </div>
   );
 }
