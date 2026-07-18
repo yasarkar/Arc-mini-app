@@ -2,6 +2,7 @@
 
 import { useAccount, useBalance } from "wagmi";
 import { arcTestnet } from "@/config/arcChain";
+import { useState, useEffect } from "react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -27,22 +28,12 @@ export interface UnifiedBalanceResult {
   isConnected: boolean;
   /** The chain ID the user's wallet is currently connected to */
   connectedChainId: number | null;
+  solanaAddress: string | null;
+  cosmosAddress: string | null;
+  activeAddress: string | null;
 }
 
-// USDC ERC-20 address on Arc
-const USDC_ADDRESS = "0x3600000000000000000000000000000000000000";
-
-// ---------------------------------------------------------------------------
-// Mock data for chains that aren't the user's connected chain
-// ---------------------------------------------------------------------------
-const MOCK_CHAINS: Omit<ChainBalance, "isMock">[] = [
-  { id: "base", name: "Base", symbol: "USDC", balance: 45.50, color: "#0052FF" },
-  { id: "arbitrum", name: "Arbitrum", symbol: "USDC", balance: 80.00, color: "#2D374B" },
-  { id: "solana", name: "Solana", symbol: "USDC", balance: 24.50, color: "#9945FF" },
-  { id: "cosmos", name: "Cosmos Hub", symbol: "ATOM", balance: 12.50, color: "#E8831A" },
-];
-
-// Fetch Solana USDC balance
+// Fetch Solana USDC balance from public RPC
 async function fetchSolanaUsdcBalance(address: string): Promise<number> {
   try {
     const res = await fetch("https://api.mainnet-beta.solana.com", {
@@ -71,7 +62,7 @@ async function fetchSolanaUsdcBalance(address: string): Promise<number> {
   return 0;
 }
 
-// Fetch Cosmos ATOM balance
+// Fetch Cosmos ATOM balance from public REST endpoint
 async function fetchCosmosBalance(address: string): Promise<number> {
   try {
     const res = await fetch(`https://cosmos-lcd.publicnode.com/cosmos/bank/v1beta1/balances/${address}`);
@@ -87,41 +78,81 @@ async function fetchCosmosBalance(address: string): Promise<number> {
   return 0;
 }
 
-import { useState, useEffect } from "react";
-
 // ---------------------------------------------------------------------------
 // useUnifiedBalance
 // ---------------------------------------------------------------------------
-export function useUnifiedBalance() {
+export function useUnifiedBalance(): UnifiedBalanceResult {
   const { address, isConnected, chainId } = useAccount();
 
   const [solanaAddr, setSolanaAddr] = useState<string | null>(null);
   const [cosmosAddr, setCosmosAddr] = useState<string | null>(null);
+
+  // Real-time fetched balances for connected non-EVM wallets
   const [solanaBalance, setSolanaBalance] = useState<number>(24.50);
   const [cosmosBalance, setCosmosBalance] = useState<number>(12.50);
   const [isLoadingNonEvm, setIsLoadingNonEvm] = useState<boolean>(false);
 
-  useEffect(() => {
-    const updateAddresses = () => {
-      if (typeof window !== "undefined") {
-        setSolanaAddr(localStorage.getItem("solana_address"));
-        setCosmosAddr(localStorage.getItem("cosmos_address"));
-      }
-    };
+  // Simulated balances synced through localStorage for otonom worker operations
+  const [solanaSimBalance, setSolanaSimBalance] = useState<number>(24.50);
+  const [baseSimBalance, setBaseSimBalance] = useState<number>(45.50);
+  const [arbitrumSimBalance, setArbitrumSimBalance] = useState<number>(80.00);
+  const [arcSimBalance, setArcSimBalance] = useState<number>(0.00);
 
-    updateAddresses();
-    window.addEventListener("wallet-connection-update", updateAddresses);
+  const loadSimBalances = () => {
+    if (typeof window !== "undefined") {
+      setSolanaAddr(localStorage.getItem("solana_address"));
+      setCosmosAddr(localStorage.getItem("cosmos_address"));
+
+      const sol = localStorage.getItem("sim_balance_solana");
+      const base = localStorage.getItem("sim_balance_base");
+      const arb = localStorage.getItem("sim_balance_arbitrum");
+      const arc = localStorage.getItem("sim_balance_arc");
+
+      if (sol !== null) {
+        setSolanaSimBalance(parseFloat(sol));
+      } else {
+        localStorage.setItem("sim_balance_solana", "24.50");
+        setSolanaSimBalance(24.50);
+      }
+
+      if (base !== null) {
+        setBaseSimBalance(parseFloat(base));
+      } else {
+        localStorage.setItem("sim_balance_base", "45.50");
+        setBaseSimBalance(45.50);
+      }
+
+      if (arb !== null) {
+        setArbitrumSimBalance(parseFloat(arb));
+      } else {
+        localStorage.setItem("sim_balance_arbitrum", "80.00");
+        setArbitrumSimBalance(80.00);
+      }
+
+      if (arc !== null) {
+        setArcSimBalance(parseFloat(arc));
+      } else {
+        localStorage.setItem("sim_balance_arc", "0.00");
+        setArcSimBalance(0.00);
+      }
+    }
+  };
+
+  useEffect(() => {
+    loadSimBalances();
+    window.addEventListener("balance-update", loadSimBalances);
+    window.addEventListener("wallet-connection-update", loadSimBalances);
     return () => {
-      window.removeEventListener("wallet-connection-update", updateAddresses);
+      window.removeEventListener("balance-update", loadSimBalances);
+      window.removeEventListener("wallet-connection-update", loadSimBalances);
     };
   }, []);
 
+  // Poll real on-chain balances if non-EVM addresses exist
   useEffect(() => {
     let active = true;
     const fetchBalances = async () => {
       if (!solanaAddr && !cosmosAddr) {
-        setSolanaBalance(24.50);
-        setCosmosBalance(12.50);
         return;
       }
 
@@ -149,7 +180,7 @@ export function useUnifiedBalance() {
     };
 
     fetchBalances();
-    const interval = setInterval(fetchBalances, 15000);
+    const interval = setInterval(fetchBalances, 25000);
 
     return () => {
       active = false;
@@ -157,33 +188,45 @@ export function useUnifiedBalance() {
     };
   }, [solanaAddr, cosmosAddr]);
 
-  // Real onchain balance — reads whatever chain the wallet is actually on
+  // Real EVM balance from connected wallet
   const { data: balanceData, isLoading: balanceLoading } = useBalance({
     address,
-    chainId, // dynamic: uses the user's connected chain
+    chainId,
   });
 
-  const realBalance = balanceData
-    ? parseFloat(balanceData.formatted)
-    : 0;
-
+  const realBalance = balanceData ? parseFloat(balanceData.formatted) : 0;
   const connectedChainId = chainId ?? null;
 
-  // Build the portfolio
+  // Build the portfolio breakdown
   const chains: ChainBalance[] = [
-    // Mock EVM chains
-    { id: "base", name: "Base", symbol: "USDC", balance: 45.50, color: "#0052FF", isMock: true },
-    { id: "arbitrum", name: "Arbitrum", symbol: "USDC", balance: 80.00, color: "#2D374B", isMock: true },
-    // Solana chain: real if address exists, otherwise mock
+    // Base Chain: mock/simulated
+    {
+      id: "base",
+      name: "Base",
+      symbol: "USDC",
+      balance: baseSimBalance,
+      color: "#0052FF",
+      isMock: true,
+    },
+    // Arbitrum Chain: mock/simulated
+    {
+      id: "arbitrum",
+      name: "Arbitrum",
+      symbol: "USDC",
+      balance: arbitrumSimBalance,
+      color: "#2D374B",
+      isMock: true,
+    },
+    // Solana Chain: real if wallet extension connected, otherwise simulated
     {
       id: "solana",
       name: "Solana",
       symbol: "USDC",
-      balance: solanaAddr ? solanaBalance : 24.50,
+      balance: solanaAddr ? solanaBalance : solanaSimBalance,
       color: "#9945FF",
       isMock: !solanaAddr,
     },
-    // Cosmos chain: real if address exists, otherwise mock
+    // Cosmos Chain: real if wallet extension connected, otherwise simulated
     {
       id: "cosmos",
       name: "Cosmos Hub",
@@ -192,14 +235,14 @@ export function useUnifiedBalance() {
       color: "#E8831A",
       isMock: !cosmosAddr,
     },
-    // The user's connected chain — real onchain balance
+    // Arc Testnet Chain: real on-chain balance if connected, otherwise simulated balance
     {
       id: chainId ? `chain_${chainId}` : "arc",
       name: chainId === arcTestnet.id ? "Arc Testnet" : `Chain ${chainId ?? "?"}`,
       symbol: balanceData?.symbol ?? "USDC",
-      balance: isConnected ? realBalance : 0,
+      balance: isConnected ? realBalance : arcSimBalance,
       color: "#00D4AA",
-      isMock: false,
+      isMock: !isConnected,
     },
   ];
 

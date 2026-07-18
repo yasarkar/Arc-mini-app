@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -84,7 +84,6 @@ function parseIntent(text: string): ParsedIntent {
   const lower = text.toLowerCase();
 
   // 1. Split condition vs action clauses
-  // Split keywords: "olduğunda", "olursa", "ise", "aşınca", "geçince", "düşünce", "when", "if"
   const splitKeywords = ["olduğunda", "olursa", "ise", "aşınca", "geçince", "düşünce", "when", "if"];
   let conditionClause = "";
   let actionClause = lower;
@@ -194,7 +193,6 @@ function parseIntent(text: string): ParsedIntent {
     }
   }
 
-  // Fallback to appearance order
   if (!sourceChain && !targetChain) {
     if (chainPositions.length >= 2) {
       sourceChain = chainPositions[0].name;
@@ -382,6 +380,126 @@ export function useArcAgent(): ArcAgentResult {
   const [activeJobs, setActiveJobs] = useState<ArcJob[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(true);
 
+  const activeJobsRef = useRef<ArcJob[]>([]);
+  const lastExecutionRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    activeJobsRef.current = activeJobs;
+  }, [activeJobs]);
+
+  // otonom işleri 5 saniyede bir kontrol eden otonom döngü
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const runningJobs = activeJobsRef.current.filter((j) => j.status === "running");
+      if (runningJobs.length === 0) return;
+
+      runningJobs.forEach((job) => {
+        const now = Date.now();
+        const lastExec = lastExecutionRef.current[job.jobId] || 0;
+
+        let shouldTrigger = false;
+        
+        // Default source and target chains
+        const sourceChainName = job.sourceChain || "Solana";
+        const srcKey = sourceChainName.toLowerCase() === "arc testnet" 
+          ? "sim_balance_arc" 
+          : `sim_balance_${sourceChainName.toLowerCase()}`;
+        
+        const targetChainName = job.targetChain || "Arc";
+        const targetKey = targetChainName.toLowerCase() === "arc testnet" 
+          ? "sim_balance_arc" 
+          : `sim_balance_${targetChainName.toLowerCase()}`;
+
+        if (typeof window === "undefined") return;
+
+        const srcBalance = parseFloat(localStorage.getItem(srcKey) || "0");
+        const targetBalance = parseFloat(localStorage.getItem(targetKey) || "0");
+
+        if (job.conditionType === "balance" && job.conditionAmount !== undefined) {
+          // Balance-triggered tasks rate-limit to once per 15s to prevent loops
+          if (srcBalance > job.conditionAmount && now - lastExec >= 15000) {
+            shouldTrigger = true;
+          }
+        } else if (job.frequency) {
+          // Time-based periodic tasks (simulated every 20s)
+          if (now - lastExec >= 20000) {
+            shouldTrigger = true;
+          }
+        }
+
+        if (shouldTrigger) {
+          lastExecutionRef.current[job.jobId] = now;
+
+          // Calculate bridge/swap amount
+          let deduct = job.amount;
+          if (deduct === 0) {
+            const pctMatch = job.description.match(/(\d+)\s*%/);
+            if (pctMatch) {
+              deduct = parseFloat((srcBalance * (parseFloat(pctMatch[1]) / 100)).toFixed(2));
+            } else {
+              deduct = 10; // Default fallback
+            }
+          }
+
+          if (srcBalance < deduct) {
+            // Insufficient balance
+            const failMsg: Message = {
+              id: nextId(),
+              role: "agent",
+              text: `⚠️ **[Otonom Görev Tetiklenemedi]**\n\n` +
+                    `Gerekli tutar (${deduct} ${job.fromToken || "USDC"}) kaynak ağda (${sourceChainName}) bulunamadı.\n` +
+                    `Mevcut bakiye: ${srcBalance} ${job.fromToken || "USDC"}. Görev beklemede.`,
+              timestamp: new Date(),
+              jobId: job.jobId,
+            };
+            setMessages((prev) => [...prev, failMsg]);
+            return;
+          }
+
+          // Shifting Balances
+          localStorage.setItem(srcKey, (srcBalance - deduct).toFixed(2));
+          localStorage.setItem(targetKey, (targetBalance + deduct).toFixed(2));
+
+          // Dispatch event to refresh the UI (UnifiedBalance)
+          window.dispatchEvent(new Event("balance-update"));
+
+          // Post success notification in chat log
+          const txHash = mockJobOnchainId();
+          const actionLabel = job.actionType === "bridge" 
+            ? "Bridge" 
+            : job.actionType === "swap" 
+              ? "Takas (Swap)" 
+              : job.actionType === "stake" 
+                ? "Staking" 
+                : "Transfer";
+          
+          let txDetailsText = "";
+          if (job.actionType === "swap") {
+            txDetailsText = `🔄 **Takas:** ${job.fromToken} → ${job.toToken}`;
+          } else {
+            txDetailsText = `⛓ **Yön:** ${sourceChainName} → ${targetChainName}`;
+          }
+
+          const successMsg: Message = {
+            id: nextId(),
+            role: "agent",
+            text: `⏱ **[Otonom Görev Tetiklendi]**\n\n` +
+                  `⚙️ **İşlem:** ${actionLabel}\n` +
+                  `💰 **Tutar:** ${deduct} ${job.fromToken || "USDC"}\n` +
+                  `${txDetailsText}\n` +
+                  `🔗 **CCTP Tx Hash:** ${txHash.slice(0, 10)}...${txHash.slice(-8)}\n\n` +
+                  `İşlem başarıyla otonom olarak gerçekleştirildi ve bakiyeler güncellendi.`,
+            timestamp: new Date(),
+            jobId: job.jobId,
+          };
+          setMessages((prev) => [...prev, successMsg]);
+        }
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const toggleChat = useCallback(() => {
     setIsChatOpen((prev) => !prev);
   }, []);
@@ -433,6 +551,9 @@ export function useArcAgent(): ArcAgentResult {
           jobId: j.jobId,
         };
         setMessages((prev) => [...prev, approvalMsg]);
+
+        // initialize target execution time to prevent immediate firing on approval
+        lastExecutionRef.current[j.jobId] = Date.now();
 
         return { ...j, status: "running" as JobStatus };
       }),

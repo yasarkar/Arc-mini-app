@@ -139,13 +139,32 @@ function ChainRow({ chain }: { chain: ChainBalance }) {
           <span className="text-xs font-mono text-zinc-500">{chain.symbol}</span>
         </div>
       </div>
-      <span className="text-sm font-bold font-mono tabular-nums text-white">
-        {chain.balance.toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 6,
-        })}{" "}
-        <span className="font-normal font-mono text-zinc-400">{chain.symbol}</span>
-      </span>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-bold font-mono tabular-nums text-white">
+          {chain.balance.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 6,
+          })}{" "}
+          <span className="font-normal font-mono text-zinc-400">{chain.symbol}</span>
+        </span>
+        {chain.isMock && (
+          <button
+            type="button"
+            title="Simüle Bakiye Ekle (+50)"
+            onClick={(e) => {
+              e.stopPropagation();
+              const key = `sim_balance_${chain.id}`;
+              const val = localStorage.getItem(key);
+              let current = val !== null ? parseFloat(val) : chain.balance;
+              localStorage.setItem(key, (current + 50).toFixed(2));
+              window.dispatchEvent(new Event("balance-update"));
+            }}
+            className="flex h-5 w-5 items-center justify-center rounded-[4px] bg-white/10 text-xs font-bold text-white transition-all hover:bg-white/20 hover:scale-105 active:scale-95"
+          >
+            +
+          </button>
+        )}
+      </div>
     </div>
   );
 }
