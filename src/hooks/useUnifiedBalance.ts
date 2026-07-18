@@ -183,11 +183,11 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
     };
   }, [solanaAddr, cosmosAddr]);
 
-  // Real EVM balances from connected wallet across all networks simultaneously
-  // 1. Arc Testnet native USDC (18 decimals native, EIP-3085 native currency)
+  // 1. Arc Testnet USDC (using ERC-20 contract for robust display with 6 decimals)
   const { data: arcBalanceData, isLoading: arcBalanceLoading } = useBalance({
     address,
     chainId: 5042002,
+    token: "0x3600000000000000000000000000000000000000",
     query: {
       enabled: !!address,
     }
