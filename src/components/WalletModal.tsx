@@ -48,8 +48,23 @@ const WALLETS: WalletOption[] = [
   },
   {
     id: "okx", name: "OKX Wallet",
-    iconPath: "/wallets/okx.svg", color: "#ffffffff",
-    type: "evm", connector: () => injected({ target: "okxWallet" }),
+    iconPath: "/wallets/okx.svg", color: "#ffffff",
+    type: "evm",
+    connector: () =>
+      injected({
+        target: {
+          id: "okxWallet",
+          name: "OKX Wallet",
+          provider(window: any) {
+            if (window?.okxwallet) return window.okxwallet;
+            if (window?.ethereum?.isOkxWallet) return window.ethereum;
+            if (window?.ethereum?.providers) {
+              return window.ethereum.providers.find((p: any) => p.isOkxWallet);
+            }
+            return undefined;
+          },
+        },
+      }),
   },
   {
     id: "coinbase", name: "Coinbase Wallet",
