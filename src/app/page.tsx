@@ -443,37 +443,48 @@ function SendFunds({
   isPrivateMode,
   onTogglePrivacy,
   generateViewingKey,
+  executeSend,
+  sendStatus,
+  sendError,
+  resetSend,
 }: {
   isConnected: boolean;
   totalUnified: number;
   realArcBalance: number;
   isPrivateMode: boolean;
   onTogglePrivacy: () => void;
-  generateViewingKey: (txHash: string, details: PrivateTxDetails) => string;
+  generateViewingKey: (txHash: string, details: PrivateTxDetails) => Promise<string>;
+  executeSend: (toAddress: string, amount: number) => Promise<void>;
+  sendStatus: SendStatus;
+  sendError: string | null;
+  resetSend: () => void;
 }) {
   const [toAddress, setToAddress] = useState("");
   const [amountStr, setAmountStr] = useState("");
   const [lastViewingKey, setLastViewingKey] = useState<string | null>(null);
   const [txCompleted, setTxCompleted] = useState(false);
 
-  const { sendStatus, sendError, executeSend, resetSend } =
-    useUniversalSend(totalUnified, realArcBalance, isConnected);
+  useEffect(() => {
+    if (sendStatus === "success" && !txCompleted && isPrivateMode) {
+      const mockDetails: PrivateTxDetails = {
+        txHash: `0x${Array.from({ length: 64 }, () =>
+          Math.floor(Math.random() * 16).toString(16),
+        ).join("")}`,
+        sender: "0x742d35Cc6634C0532925a3b844Bc9e7595f2bD18",
+        recipient: toAddress.trim(),
+        amount: parseFloat(amountStr) || 0,
+        symbol: "USDC",
+        timestamp: Date.now(),
+      };
 
-  if (sendStatus === "success" && !txCompleted && isPrivateMode) {
-    const mockDetails: PrivateTxDetails = {
-      txHash: `0x${Array.from({ length: 64 }, () =>
-        Math.floor(Math.random() * 16).toString(16),
-      ).join("")}`,
-      sender: "0x742d35Cc6634C0532925a3b844Bc9e7595f2bD18",
-      recipient: toAddress.trim(),
-      amount: parseFloat(amountStr) || 0,
-      symbol: "USDC",
-      timestamp: Date.now(),
-    };
-    const vkey = generateViewingKey(mockDetails.txHash, mockDetails);
-    setLastViewingKey(vkey);
-    setTxCompleted(true);
-  }
+      setTxCompleted(true);
+      generateViewingKey(mockDetails.txHash, mockDetails).then((vkey) => {
+        setLastViewingKey(vkey);
+      }).catch((e) => {
+        console.error("Failed to generate viewing key in SendFunds:", e);
+      });
+    }
+  }, [sendStatus, txCompleted, isPrivateMode, toAddress, amountStr, generateViewingKey]);
 
   const handleSend = useCallback(async () => {
     const amount = parseFloat(amountStr);
@@ -584,16 +595,16 @@ function AuditorPanel({
   revealTransactionDetails,
 }: {
   storedKeys: { key: string; details: PrivateTxDetails }[];
-  revealTransactionDetails: (key: string) => PrivateTxDetails | null;
+  revealTransactionDetails: (key: string) => Promise<PrivateTxDetails | null>;
 }) {
   const [inputKey, setInputKey] = useState("");
   const [revealedTx, setRevealedTx] = useState<PrivateTxDetails | null>(null);
   const [revealError, setRevealError] = useState<string | null>(null);
 
-  const handleReveal = useCallback(() => {
+  const handleReveal = useCallback(async () => {
     const trimmed = inputKey.trim();
     if (!trimmed) return;
-    const result = revealTransactionDetails(trimmed);
+    const result = await revealTransactionDetails(trimmed);
     if (result) { setRevealedTx(result); setRevealError(null); }
     else { setRevealedTx(null); setRevealError("Geçersiz veya süresi dolmuş görüntüleme anahtarı."); }
   }, [inputKey, revealTransactionDetails]);
@@ -638,8 +649,8 @@ function AuditorPanel({
               <div className="space-y-2">
                 {[{ l: "Gönderen", v: truncateAddress(revealedTx.sender) }, { l: "Alıcı", v: truncateAddress(revealedTx.recipient) }, { l: "Tutar", v: `${revealedTx.amount.toFixed(2)} ${revealedTx.symbol}` }, { l: "Zaman", v: formatTime(revealedTx.timestamp) }].map((r) => (
                   <div key={r.l} className="flex justify-between">
-                    <span className="text-[11px] font-body text-zinc-500">{r.l}</span>
-                    <span className="text-xs font-mono text-white">{r.v}</span>
+                     <span className="text-[11px] font-body text-zinc-500">{r.l}</span>
+                     <span className="text-xs font-mono text-white">{r.v}</span>
                   </div>
                 ))}
               </div>
@@ -908,16 +919,38 @@ function ChatInput({ onSend, disabled }: { onSend: (text: string) => void; disab
 // =========================================================================
 // AI Agent — Full Panel
 // =========================================================================
-function ArcAgentPanel() {
-  const { messages, activeJobs, sendMessage, approveJob, rejectJob, isChatOpen, toggleChat } = useArcAgent();
+function ArcAgentPanel({
+  isConnected,
+  activeAddress,
+  chains,
+  executeSend,
+  sendStatus,
+  sendError,
+  connectedChainId,
+}: {
+  isConnected: boolean;
+  activeAddress: string | null;
+  chains: any[];
+  executeSend: (toAddress: string, amount: number) => Promise<void>;
+  sendStatus: string;
+  sendError: string | null;
+  connectedChainId: number | null;
+}) {
+  const { messages, activeJobs, sendMessage, approveJob, rejectJob, isChatOpen, toggleChat } = useArcAgent({
+    isConnected,
+    activeAddress,
+    chains,
+    executeSend,
+    sendStatus,
+    sendError,
+    connectedChainId,
+  });
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  const isSending = false; // messages are instant
 
   return (
     <div className="mx-auto mt-10 w-full max-w-md">
@@ -1045,7 +1078,7 @@ function Footer() {
 // Page — ArcFlow Dashboard
 // =========================================================================
 export default function Home() {
-  const { totalUnified, chains, isLoading, isConnected, activeAddress } = useUnifiedBalance();
+  const { totalUnified, chains, isLoading, isConnected, activeAddress, connectedChainId } = useUnifiedBalance();
   const {
     isPrivateMode, togglePrivacy, generateViewingKey,
     revealTransactionDetails, storedKeys,
@@ -1055,6 +1088,9 @@ export default function Home() {
 
   const arcChain = chains.find((c) => c.id === "arc");
   const realArcBalance = arcChain?.balance ?? 0;
+
+  const { sendStatus, sendError, executeSend, resetSend } =
+    useUniversalSend(totalUnified, realArcBalance, isConnected);
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-arc-bg-gradient-start to-arc-bg-gradient-end">
@@ -1075,10 +1111,19 @@ export default function Home() {
         <SendFunds
           isConnected={isConnected} totalUnified={totalUnified} realArcBalance={realArcBalance}
           isPrivateMode={isPrivateMode} onTogglePrivacy={togglePrivacy} generateViewingKey={generateViewingKey}
+          executeSend={executeSend} sendStatus={sendStatus} sendError={sendError} resetSend={resetSend}
         />
         <AddFundsCard isConnected={isConnected} />
         <AuditorPanel storedKeys={storedKeys} revealTransactionDetails={revealTransactionDetails} />
-        <ArcAgentPanel />
+        <ArcAgentPanel
+          isConnected={isConnected}
+          activeAddress={activeAddress}
+          chains={chains}
+          executeSend={executeSend}
+          sendStatus={sendStatus}
+          sendError={sendError}
+          connectedChainId={connectedChainId}
+        />
       </main>
 
       <Footer />

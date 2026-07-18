@@ -363,7 +363,37 @@ function buildAgentResponse(intent: ParsedIntent): {
 // ---------------------------------------------------------------------------
 // useArcAgent hook
 // ---------------------------------------------------------------------------
-export function useArcAgent(): ArcAgentResult {
+export interface ArcAgentParams {
+  isConnected: boolean;
+  activeAddress: string | null;
+  chains: { id: string; name: string; balance: number; symbol: string; isMock: boolean }[];
+  executeSend: (toAddress: string, amount: number) => Promise<void>;
+  sendStatus: string;
+  sendError: string | null;
+  connectedChainId: number | null;
+}
+
+function getChainIdFromName(name: string): number | null {
+  const n = name.toLowerCase();
+  if (n.includes("arc")) return 5042002;
+  if (n.includes("base")) return 84532;
+  if (n.includes("arbitrum")) return 421614;
+  if (n.includes("ethereum") || n.includes("sepolia")) return 11155111;
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// useArcAgent hook
+// ---------------------------------------------------------------------------
+export function useArcAgent({
+  isConnected,
+  activeAddress,
+  chains,
+  executeSend,
+  sendStatus,
+  sendError,
+  connectedChainId,
+}: ArcAgentParams): ArcAgentResult {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: nextId(),
@@ -379,13 +409,88 @@ export function useArcAgent(): ArcAgentResult {
   ]);
   const [activeJobs, setActiveJobs] = useState<ArcJob[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(true);
+  const [executingJobId, setExecutingJobId] = useState<string | null>(null);
 
   const activeJobsRef = useRef<ArcJob[]>([]);
   const lastExecutionRef = useRef<Record<string, number>>({});
+  const isConnectedRef = useRef(isConnected);
+  const activeAddressRef = useRef(activeAddress);
+  const chainsRef = useRef(chains);
+  const executeSendRef = useRef(executeSend);
+  const connectedChainIdRef = useRef(connectedChainId);
+  const executingJobIdRef = useRef<string | null>(null);
+  const lastWarnRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
     activeJobsRef.current = activeJobs;
   }, [activeJobs]);
+
+  useEffect(() => {
+    isConnectedRef.current = isConnected;
+    activeAddressRef.current = activeAddress;
+    chainsRef.current = chains;
+    executeSendRef.current = executeSend;
+    connectedChainIdRef.current = connectedChainId;
+    executingJobIdRef.current = executingJobId;
+  }, [isConnected, activeAddress, chains, executeSend, connectedChainId, executingJobId]);
+
+  // otonom işlerin durum takibi (başarı / hata logları)
+  useEffect(() => {
+    if (!executingJobId) return;
+
+    const job = activeJobs.find((j) => j.jobId === executingJobId);
+    if (!job) return;
+
+    if (sendStatus === "success") {
+      const txHash = mockJobOnchainId();
+      const actionLabel = job.actionType === "bridge" 
+        ? "Bridge" 
+        : job.actionType === "swap" 
+          ? "Takas (Swap)" 
+          : job.actionType === "stake" 
+            ? "Staking" 
+            : "Transfer";
+
+      const successMsg: Message = {
+        id: nextId(),
+        role: "agent",
+        text: `✅ **[Otonom Görev Başarıyla Gerçekleşti]**\n\n` +
+              `⚙️ **İşlem:** ${actionLabel}\n` +
+              `💰 **Tutar:** ${job.amount} ${job.fromToken || "USDC"}\n` +
+              `⛓ **Yön:** ${job.sourceChain || "Base"} → ${job.targetChain || "Arc Testnet"}\n` +
+              `🔗 **Tx Hash:** ${txHash.slice(0, 10)}...${txHash.slice(-8)}\n\n` +
+              `İşlem cüzdanınız aracılığıyla zincir üstünde kesinleştirildi. Bakiyeler güncellendi.`,
+        timestamp: new Date(),
+        jobId: job.jobId,
+      };
+      setMessages((prev) => [...prev, successMsg]);
+
+      // Tek seferlikse tamamla, periyodikse aktif bırak
+      if (!job.frequency) {
+        setActiveJobs((prev) =>
+          prev.map((j) => (j.jobId === job.jobId ? { ...j, status: "completed" as JobStatus } : j))
+        );
+      }
+
+      lastExecutionRef.current[job.jobId] = Date.now();
+      setExecutingJobId(null);
+
+      // Tetikleyici UI güncellemesi
+      window.dispatchEvent(new Event("balance-update"));
+    } else if (sendStatus === "error") {
+      const failMsg: Message = {
+        id: nextId(),
+        role: "agent",
+        text: `⚠️ **[Otonom Görev Başarısız]**\n\n` +
+              `Cüzdandaki işlem başarısız oldu veya reddedildi:\n` +
+              `_${sendError || "Kullanıcı işlemi reddetti."}_`,
+        timestamp: new Date(),
+        jobId: job.jobId,
+      };
+      setMessages((prev) => [...prev, failMsg]);
+      setExecutingJobId(null);
+    }
+  }, [sendStatus, sendError, executingJobId, activeJobs]);
 
   // otonom işleri 5 saniyede bir kontrol eden otonom döngü
   useEffect(() => {
@@ -393,56 +498,72 @@ export function useArcAgent(): ArcAgentResult {
       const runningJobs = activeJobsRef.current.filter((j) => j.status === "running");
       if (runningJobs.length === 0) return;
 
+      // Eğer şu an cüzdanda bekleyen aktif bir işlem varsa, yeni işlem tetikleme
+      if (executingJobIdRef.current) return;
+
       runningJobs.forEach((job) => {
         const now = Date.now();
         const lastExec = lastExecutionRef.current[job.jobId] || 0;
 
         let shouldTrigger = false;
         
-        // Default source and target chains
+        // Cüzdan bağlıysa ve ağ eşleşmesi gerekiyorsa
         const sourceChainName = job.sourceChain || "Solana";
-        const srcKey = sourceChainName.toLowerCase() === "arc testnet" 
-          ? "sim_balance_arc" 
-          : `sim_balance_${sourceChainName.toLowerCase()}`;
-        
-        const targetChainName = job.targetChain || "Arc";
-        const targetKey = targetChainName.toLowerCase() === "arc testnet" 
-          ? "sim_balance_arc" 
-          : `sim_balance_${targetChainName.toLowerCase()}`;
+        const isNonEvm = ["solana", "cosmos", "cosmos hub"].includes(sourceChainName.toLowerCase());
 
-        if (typeof window === "undefined") return;
-
-        const srcBalance = parseFloat(localStorage.getItem(srcKey) || "0");
-        const targetBalance = parseFloat(localStorage.getItem(targetKey) || "0");
+        // Bakiye kontrolü
+        let srcBalance = 0;
+        if (isConnectedRef.current) {
+          const matchedChain = chainsRef.current.find(
+            (c) =>
+              c.id === sourceChainName.toLowerCase() ||
+              c.name.toLowerCase().includes(sourceChainName.toLowerCase())
+          );
+          if (matchedChain) {
+            srcBalance = matchedChain.balance;
+          } else {
+            // Fallback to local storage if not found in active list
+            const srcKey = sourceChainName.toLowerCase() === "arc testnet" 
+              ? "sim_balance_arc" 
+              : `sim_balance_${sourceChainName.toLowerCase()}`;
+            srcBalance = parseFloat(localStorage.getItem(srcKey) || "0");
+          }
+        } else {
+          const srcKey = sourceChainName.toLowerCase() === "arc testnet" 
+            ? "sim_balance_arc" 
+            : `sim_balance_${sourceChainName.toLowerCase()}`;
+          srcBalance = parseFloat(localStorage.getItem(srcKey) || "0");
+        }
 
         if (job.conditionType === "balance" && job.conditionAmount !== undefined) {
-          // Balance-triggered tasks rate-limit to once per 15s to prevent loops
           if (srcBalance > job.conditionAmount && now - lastExec >= 15000) {
             shouldTrigger = true;
           }
         } else if (job.frequency) {
-          // Time-based periodic tasks (simulated every 20s)
           if (now - lastExec >= 20000) {
+            shouldTrigger = true;
+          }
+        } else if (!job.conditionType && !job.frequency) {
+          // Anında (Manuel Onay) - tetiklenmemişse tetiklensin
+          if (lastExec === 0) {
             shouldTrigger = true;
           }
         }
 
         if (shouldTrigger) {
-          lastExecutionRef.current[job.jobId] = now;
-
-          // Calculate bridge/swap amount
+          // Calculate amount
           let deduct = job.amount;
           if (deduct === 0) {
             const pctMatch = job.description.match(/(\d+)\s*%/);
             if (pctMatch) {
               deduct = parseFloat((srcBalance * (parseFloat(pctMatch[1]) / 100)).toFixed(2));
             } else {
-              deduct = 10; // Default fallback
+              deduct = 10;
             }
           }
 
           if (srcBalance < deduct) {
-            // Insufficient balance
+            // Yetersiz bakiye logu
             const failMsg: Message = {
               id: nextId(),
               role: "agent",
@@ -453,46 +574,114 @@ export function useArcAgent(): ArcAgentResult {
               jobId: job.jobId,
             };
             setMessages((prev) => [...prev, failMsg]);
+            lastExecutionRef.current[job.jobId] = now; // rate-limit logging
             return;
           }
 
-          // Shifting Balances
-          localStorage.setItem(srcKey, (srcBalance - deduct).toFixed(2));
-          localStorage.setItem(targetKey, (targetBalance + deduct).toFixed(2));
+          // ─── GERÇEK VS SİMÜLE AYRIMI ───
+          if (isConnectedRef.current && !isNonEvm) {
+            // EVM ağlarında gerçek işlem tetikleme
+            const expectedChainId = getChainIdFromName(sourceChainName);
+            const currentChainId = connectedChainIdRef.current;
 
-          // Dispatch event to refresh the UI (UnifiedBalance)
-          window.dispatchEvent(new Event("balance-update"));
+            if (expectedChainId !== null && currentChainId !== expectedChainId) {
+              // Yanlış ağ uyarısı (20s rate-limit)
+              const lastWarn = lastWarnRef.current[job.jobId] || 0;
+              if (now - lastWarn >= 20000) {
+                lastWarnRef.current[job.jobId] = now;
+                const warnMsg: Message = {
+                  id: nextId(),
+                  role: "agent",
+                  text: `⚠️ **[Otonom Görev Ağı Bekliyor]**\n\n` +
+                        `**${sourceChainName}** ağından tetikleme yapmak için lütfen cüzdan ağınızı **${sourceChainName}** olarak değiştirin.\n` +
+                        `Mevcut ağ ID: ${currentChainId} · Beklenen ağ ID: ${expectedChainId}`,
+                  timestamp: new Date(),
+                  jobId: job.jobId,
+                };
+                setMessages((prev) => [...prev, warnMsg]);
+              }
+              return;
+            }
 
-          // Post success notification in chat log
-          const txHash = mockJobOnchainId();
-          const actionLabel = job.actionType === "bridge" 
-            ? "Bridge" 
-            : job.actionType === "swap" 
-              ? "Takas (Swap)" 
-              : job.actionType === "stake" 
-                ? "Staking" 
-                : "Transfer";
-          
-          let txDetailsText = "";
-          if (job.actionType === "swap") {
-            txDetailsText = `🔄 **Takas:** ${job.fromToken} → ${job.toToken}`;
+            // Doğru ağdaysak cüzdan imzasını tetikleme
+            setExecutingJobId(job.jobId);
+            const triggerMsg: Message = {
+              id: nextId(),
+              role: "agent",
+              text: `⏱ **[Otonom Görev Tetiklendi]**\n\n` +
+                    `⚙️ **İşlem:** Bridge/Transfer\n` +
+                    `💰 **Tutar:** ${deduct} ${job.fromToken || "USDC"}\n` +
+                    `⛓ **Kaynak Ağ:** ${sourceChainName}\n\n` +
+                    `İşlemi başlatmak için cüzdanınızda (MetaMask vb.) açılan pencereyi onaylayın.`,
+              timestamp: new Date(),
+              jobId: job.jobId,
+            };
+            setMessages((prev) => [...prev, triggerMsg]);
+
+            executeSendRef.current(activeAddressRef.current || "", deduct).catch((err) => {
+              console.error("Agent execution send failed:", err);
+              // reset executing job ID on immediate rejection
+              setExecutingJobId(null);
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: nextId(),
+                  role: "agent",
+                  text: `❌ **[Otonom Görev İptal Edildi]**\n\n` +
+                        `İşlem cüzdanda onaylanmadı veya reddedildi.`,
+                  timestamp: new Date(),
+                  jobId: job.jobId,
+                },
+              ]);
+            });
           } else {
-            txDetailsText = `⛓ **Yön:** ${sourceChainName} → ${targetChainName}`;
-          }
+            // Non-EVM veya Cüzdan bağlı değilken: Simüle çalış
+            lastExecutionRef.current[job.jobId] = now;
 
-          const successMsg: Message = {
-            id: nextId(),
-            role: "agent",
-            text: `⏱ **[Otonom Görev Tetiklendi]**\n\n` +
-                  `⚙️ **İşlem:** ${actionLabel}\n` +
-                  `💰 **Tutar:** ${deduct} ${job.fromToken || "USDC"}\n` +
-                  `${txDetailsText}\n` +
-                  `🔗 **CCTP Tx Hash:** ${txHash.slice(0, 10)}...${txHash.slice(-8)}\n\n` +
-                  `İşlem başarıyla otonom olarak gerçekleştirildi ve bakiyeler güncellendi.`,
-            timestamp: new Date(),
-            jobId: job.jobId,
-          };
-          setMessages((prev) => [...prev, successMsg]);
+            const targetChainName = job.targetChain || "Arc";
+            const srcKey = sourceChainName.toLowerCase() === "arc testnet" 
+              ? "sim_balance_arc" 
+              : `sim_balance_${sourceChainName.toLowerCase()}`;
+            const targetKey = targetChainName.toLowerCase() === "arc testnet" 
+              ? "sim_balance_arc" 
+              : `sim_balance_${targetChainName.toLowerCase()}`;
+
+            localStorage.setItem(srcKey, (srcBalance - deduct).toFixed(2));
+            const targetBalance = parseFloat(localStorage.getItem(targetKey) || "0");
+            localStorage.setItem(targetKey, (targetBalance + deduct).toFixed(2));
+
+            // Refresh UI
+            window.dispatchEvent(new Event("balance-update"));
+
+            const txHash = mockJobOnchainId();
+            const actionLabel = job.actionType === "bridge" 
+              ? "Bridge" 
+              : job.actionType === "swap" 
+                ? "Takas (Swap)" 
+                : job.actionType === "stake" 
+                  ? "Staking" 
+                  : "Transfer";
+
+            const successMsg: Message = {
+              id: nextId(),
+              role: "agent",
+              text: `⏱ **[Otonom Görev Tetiklendi - Simüle]**\n\n` +
+                    `⚙️ **İşlem:** ${actionLabel}\n` +
+                    `💰 **Tutar:** ${deduct} ${job.fromToken || "USDC"}\n` +
+                    `⛓ **Yön:** ${sourceChainName} → ${targetChainName}\n` +
+                    `🔗 **Simüle Tx Hash:** ${txHash.slice(0, 10)}...${txHash.slice(-8)}\n\n` +
+                    `İşlem simüle ağda otonom olarak gerçekleştirildi. Bakiyeler güncellendi.`,
+              timestamp: new Date(),
+              jobId: job.jobId,
+            };
+            setMessages((prev) => [...prev, successMsg]);
+
+            if (!job.frequency) {
+              setActiveJobs((prev) =>
+                prev.map((j) => (j.jobId === job.jobId ? { ...j, status: "completed" as JobStatus } : j))
+              );
+            }
+          }
         }
       });
     }, 5000);
@@ -552,8 +741,10 @@ export function useArcAgent(): ArcAgentResult {
         };
         setMessages((prev) => [...prev, approvalMsg]);
 
-        // initialize target execution time to prevent immediate firing on approval
-        lastExecutionRef.current[j.jobId] = Date.now();
+        // initialize target execution time to prevent immediate firing on approval (except for immediate tasks)
+        if (j.conditionType || j.frequency) {
+          lastExecutionRef.current[j.jobId] = Date.now();
+        }
 
         return { ...j, status: "running" as JobStatus };
       }),
