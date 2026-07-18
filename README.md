@@ -17,7 +17,7 @@ npm run dev
 | Parametre | Değer |
 |-----------|-------|
 | Ağ | Arc Testnet |
-| Chain ID | `111111` (placeholder) |
+| Chain ID | `5042002` |
 | RPC | `NEXT_PUBLIC_ARC_RPC_URL` env ile özelleştirilebilir |
 | Gezgin | [ArcScan](https://testnet.arcscan.app) |
 | Faucet | [Circle Faucet](https://faucet.circle.com) |

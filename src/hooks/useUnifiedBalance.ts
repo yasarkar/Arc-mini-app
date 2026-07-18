@@ -35,7 +35,7 @@ export interface UnifiedBalanceResult {
 // Fetch Solana USDC balance from public RPC
 async function fetchSolanaUsdcBalance(address: string): Promise<number> {
   try {
-    const res = await fetch("https://api.mainnet-beta.solana.com", {
+    const res = await fetch("https://api.devnet.solana.com", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -44,7 +44,7 @@ async function fetchSolanaUsdcBalance(address: string): Promise<number> {
         method: "getTokenAccountsByOwner",
         params: [
           address,
-          { mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
+          { mint: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU" },
           { encoding: "jsonParsed" },
         ],
       }),
@@ -64,7 +64,7 @@ async function fetchSolanaUsdcBalance(address: string): Promise<number> {
 // Fetch Cosmos ATOM balance from public REST endpoint
 async function fetchCosmosBalance(address: string): Promise<number> {
   try {
-    const res = await fetch(`https://cosmos-lcd.publicnode.com/cosmos/bank/v1beta1/balances/${address}`);
+    const res = await fetch(`https://cosmos-testnet-api.polkachu.com/cosmos/bank/v1beta1/balances/${address}`);
     if (!res.ok) return 0;
     const json = await res.json();
     const atomBalance = json?.balances?.find((b: any) => b.denom === "uatom");
@@ -79,8 +79,8 @@ async function fetchCosmosBalance(address: string): Promise<number> {
 
 // USDC ERC-20 contract addresses on EVM networks
 const USDC_CONTRACTS = {
-  base: "0x036cbd53842c33589aa77c770d1e5cd90f91ab0a",
-  arbitrum: "0x75faf114eafb1BD239d714e1d338eed0b3779abf",
+  base: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+  arbitrum: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
   ethereum: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
 };
 
