@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,19 +43,29 @@ function randomHex(bytes: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// usePrivacyTransfer
+// usePrivacyTransfer Hook
 // ---------------------------------------------------------------------------
 export function usePrivacyTransfer(): PrivacyTransferResult {
   const [isPrivateMode, setIsPrivateMode] = useState(false);
   const [lastViewingKey, setLastViewingKey] = useState<string | null>(null);
-
-  // Map of viewingKey -> transaction details
-  const keyStore = useRef<Map<string, PrivateTxDetails>>(new Map());
-  // Ordered list for display
-  const keyList = useRef<{ key: string; details: PrivateTxDetails }[]>([]);
+  const [storedKeys, setStoredKeys] = useState<{ key: string; details: PrivateTxDetails }[]>([]);
 
   const togglePrivacy = useCallback(() => {
     setIsPrivateMode((prev) => !prev);
+  }, []);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const keysJson = localStorage.getItem("stored_viewing_keys");
+      if (keysJson) {
+        try {
+          setStoredKeys(JSON.parse(keysJson));
+        } catch (e) {
+          console.error("Failed to parse stored viewing keys:", e);
+        }
+      }
+    }
   }, []);
 
   const generateViewingKey = useCallback(
@@ -65,14 +75,15 @@ export function usePrivacyTransfer(): PrivacyTransferResult {
       const checksum = randomHex(4);
       const viewingKey = `vkey_arc_${entropy}${checksum}`;
 
-      // Store the mapping
-      keyStore.current.set(viewingKey, details);
-      keyList.current = [
-        { key: viewingKey, details },
-        ...keyList.current,
-      ];
+      const newKeyEntry = { key: viewingKey, details };
+      
+      setStoredKeys((prev) => {
+        const updated = [newKeyEntry, ...prev];
+        localStorage.setItem("stored_viewing_keys", JSON.stringify(updated));
+        return updated;
+      });
+      
       setLastViewingKey(viewingKey);
-
       return viewingKey;
     },
     [],
@@ -80,12 +91,22 @@ export function usePrivacyTransfer(): PrivacyTransferResult {
 
   const revealTransactionDetails = useCallback(
     (viewingKey: string): PrivateTxDetails | null => {
-      // Simulated decryption: look up in our store
-      const details = keyStore.current.get(viewingKey);
-      if (!details) return null;
-
-      // Return a copy to prevent mutation
-      return { ...details };
+      let found: PrivateTxDetails | null = null;
+      if (typeof window !== "undefined") {
+        const keysJson = localStorage.getItem("stored_viewing_keys");
+        if (keysJson) {
+          try {
+            const list = JSON.parse(keysJson) as { key: string; details: PrivateTxDetails }[];
+            const item = list.find((i) => i.key === viewingKey);
+            if (item) {
+              found = item.details;
+            }
+          } catch (e) {
+            console.error("Failed to search viewing key in localStorage:", e);
+          }
+        }
+      }
+      return found;
     },
     [],
   );
@@ -96,6 +117,6 @@ export function usePrivacyTransfer(): PrivacyTransferResult {
     generateViewingKey,
     revealTransactionDetails,
     lastViewingKey,
-    storedKeys: keyList.current,
+    storedKeys,
   };
 }

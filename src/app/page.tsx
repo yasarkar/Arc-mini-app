@@ -25,6 +25,7 @@ import {
   SendHorizonal,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   Activity,
   Zap,
   Ban,
@@ -320,6 +321,12 @@ function Stepper({
 
   return (
     <div className="space-y-3">
+      {isPrivateMode && isActive && (
+        <div className="mb-4 flex items-center gap-2.5 rounded-lg border border-purple-500/20 bg-purple-500/5 px-3 py-2 text-[11px] text-purple-300 animate-pulse text-left">
+          <Shield className="h-4 w-4 text-purple-400 flex-shrink-0" />
+          <span>ZK Proof: Kriptografik Sıfır Bilgi kanıtı üretiliyor...</span>
+        </div>
+      )}
       {STEP_DEFS.map((step, idx) => {
         const stepIndex = STEP_DEFS.findIndex((s) => s.key === status);
         const isCurrentStep = step.key === status;
@@ -638,7 +645,33 @@ function AuditorPanel({
               </div>
             </div>
           )}
-          {storedKeys.length > 0 && <p className="text-[10px] font-body text-zinc-500 text-center">{storedKeys.length} görüntüleme anahtarı kullanılabilir</p>}
+          {storedKeys.length > 0 && (
+            <div className="mt-4 border-t border-white/10 pt-4">
+              <p className="mb-2 text-[10px] font-display font-semibold uppercase tracking-wider text-zinc-500 text-left">
+                Üretilen Görüntüleme Anahtarlarım
+              </p>
+              <div className="max-h-36 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
+                {storedKeys.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setInputKey(item.key)}
+                    className="group flex w-full items-center justify-between rounded-lg border border-white/[0.04] bg-white/[0.01] px-3 py-2 text-left transition-all hover:bg-white/[0.05] hover:border-purple-500/20"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-mono text-[10px] text-zinc-400 group-hover:text-purple-300">
+                        {item.key}
+                      </p>
+                      <p className="text-[9px] text-zinc-500 font-mono">
+                        {item.details.amount} USDC → {truncateAddress(item.details.recipient)}
+                      </p>
+                    </div>
+                    <ChevronRight className="h-3.5 w-3.5 text-zinc-600 transition-transform group-hover:translate-x-0.5 group-hover:text-purple-300" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
