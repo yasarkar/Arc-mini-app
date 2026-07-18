@@ -183,11 +183,10 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
     };
   }, [solanaAddr, cosmosAddr]);
 
-  // 1. Arc Testnet USDC (using ERC-20 contract for robust display with 6 decimals)
+  // 1. Arc Testnet USDC (using native balance to avoid RPC rate-limiting on contract eth_call queries)
   const { data: arcBalanceData, isLoading: arcBalanceLoading } = useBalance({
     address,
     chainId: 5042002,
-    token: "0x3600000000000000000000000000000000000000",
     query: {
       enabled: !!address,
     }
