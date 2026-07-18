@@ -653,7 +653,7 @@ function ActiveJobsBar({ jobs }: { jobs: ArcJob[] }) {
                 {job.description.slice(0, 50)}
               </p>
               <p className="text-[10px] font-mono text-zinc-400">
-                ERC-8183 · {job.frequency ?? "one-time"} · {job.amount > 0 ? `${job.amount} USDC` : "Değişken"}
+                ERC-8183 · {job.actionType ? (job.actionType === "bridge" ? "Bridge" : job.actionType === "swap" ? `Takas (${job.fromToken}→${job.toToken})` : job.actionType === "stake" ? "Staking" : "Transfer") : "Transfer"} · {job.frequency ?? "one-time"} · {job.amount > 0 ? `${job.amount} ${job.fromToken || "USDC"}` : "Değişken"}
               </p>
             </div>
             <Activity className="h-3.5 w-3.5 flex-shrink-0 text-[#acc6e9]" />
@@ -704,11 +704,20 @@ function JobApprovalCard({
 
       <div className="mb-3 space-y-1.5 text-left">
         <p className="text-sm font-body font-semibold text-white">{job.description}</p>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-mono text-zinc-400">
-          {job.amount > 0 && <span>💰 Bütçe: {job.amount > 50 ? `${job.amount} USDC` : `%${job.amount}`}</span>}
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] font-mono text-zinc-400">
+          <span>⚙️ İşlem: {job.actionType ? (job.actionType === "bridge" ? "Bridge" : job.actionType === "swap" ? "Takas (Swap)" : job.actionType === "stake" ? "Staking" : "Transfer") : "Transfer"}</span>
+          {job.amount > 0 ? (
+            <span>💰 Bütçe: {job.amount > 50 ? `${job.amount} ${job.fromToken || "USDC"}` : `%${job.amount}`}</span>
+          ) : (
+            <span>💰 Bütçe: Tüm {job.fromToken || "USDC"}</span>
+          )}
+          {job.actionType === "swap" && <span>🔄 Değişim: {job.fromToken} → {job.toToken}</span>}
           {job.sourceChain && <span>⛓ Kaynak: {job.sourceChain}</span>}
-          {job.targetChain && <span>🎯 Hedef: {job.targetChain}</span>}
-          {job.frequency && <span>🔄 {job.frequency}</span>}
+          {job.targetChain && job.actionType !== "swap" && job.actionType !== "stake" && <span>🎯 Hedef: {job.targetChain}</span>}
+          {job.conditionType && job.conditionAmount && (
+            <span>⏱ Tetikleyici: {job.conditionType === "balance" ? `Bakiye > ${job.conditionAmount} USDC` : `Fiyat < ${job.conditionAmount} USD`}</span>
+          )}
+          {job.frequency && <span>🔄 Sıklık: {job.frequency}</span>}
           {job.privacyMode && <span>🔒 Gizli Mod</span>}
         </div>
       </div>
