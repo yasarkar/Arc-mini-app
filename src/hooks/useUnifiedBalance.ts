@@ -79,6 +79,7 @@ async function fetchCosmosBalance(address: string): Promise<number> {
 
 // USDC ERC-20 contract addresses on EVM networks
 const USDC_CONTRACTS = {
+  arc: "0x3600000000000000000000000000000000000000",
   base: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   arbitrum: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
   ethereum: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
@@ -225,10 +226,11 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
     };
   }, [solanaAddr, cosmosAddr]);
 
-  // 1. Arc Testnet USDC (using native balance to avoid RPC rate-limiting on contract eth_call queries)
+  // 1. Arc Testnet USDC ERC-20
   const { data: arcBalanceData, isLoading: arcBalanceLoading } = useBalance({
     address,
     chainId: 5042002,
+    token: USDC_CONTRACTS.arc as `0x${string}`,
     query: {
       enabled: !!address,
     }
