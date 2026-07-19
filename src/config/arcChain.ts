@@ -36,3 +36,45 @@ export const arcTestnet = defineChain({
     },
   },
 });
+
+export const hyperEvmTestnet = defineChain({
+  id: 998,
+  name: "HyperEVM Testnet",
+  nativeCurrency: {
+    name: "Hype",
+    symbol: "HYPE",
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: ["https://rpc.hyperliquid-testnet.xyz/evm"],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: "Hyperliquid Explorer",
+      url: "https://app.hyperliquid-testnet.xyz/explorer",
+    },
+  },
+});
+
+export const sonicTestnet = defineChain({
+  id: 14601,
+  name: "Sonic Testnet",
+  nativeCurrency: {
+    name: "Sonic",
+    symbol: "S",
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: ["https://rpc.testnet.soniclabs.com"],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: "SonicScan",
+      url: "https://testnet.sonicscan.org",
+    },
+  },
+});

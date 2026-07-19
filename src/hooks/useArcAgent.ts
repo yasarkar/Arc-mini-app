@@ -164,7 +164,21 @@ function parseIntent(text: string): ParsedIntent {
   }
 
   // 5. Parse Chains with Position/Preposition Awareness
-  const chains = ["solana", "base", "arbitrum", "ethereum", "arc"];
+  const chains = [
+    "solana",
+    "base",
+    "arbitrum",
+    "ethereum",
+    "arc",
+    "avalanche",
+    "hyperEvm",
+    "optimism",
+    "polygon",
+    "sei",
+    "sonic",
+    "unichain",
+    "worldchain",
+  ];
   const targetText = actionClause || lower;
   const chainPositions = chains
     .map((c) => ({ name: c, index: targetText.indexOf(c) }))

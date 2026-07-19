@@ -3,7 +3,21 @@
 import { useState, useCallback } from "react";
 import { useAccount, useWalletClient } from "wagmi";
 import { parseUnits } from "viem";
-import { BridgeKit, ArcTestnet, BaseSepolia, ArbitrumSepolia, EthereumSepolia } from "@circle-fin/bridge-kit";
+import {
+  BridgeKit,
+  ArcTestnet,
+  BaseSepolia,
+  ArbitrumSepolia,
+  EthereumSepolia,
+  AvalancheFuji,
+  HyperEVMTestnet,
+  OptimismSepolia,
+  PolygonAmoy,
+  SeiTestnet,
+  SonicTestnet,
+  UnichainSepolia,
+  WorldChainSepolia,
+} from "@circle-fin/bridge-kit";
 import { createViemAdapterFromProvider } from "@circle-fin/adapter-viem-v2";
 
 // ---------------------------------------------------------------------------
@@ -111,9 +125,25 @@ export function useUniversalSend(
             sourceChain = ArbitrumSepolia;
           } else if (currentChainId === 11155111) {
             sourceChain = EthereumSepolia;
+          } else if (currentChainId === 43113) {
+            sourceChain = AvalancheFuji;
+          } else if (currentChainId === 998) {
+            sourceChain = HyperEVMTestnet;
+          } else if (currentChainId === 11155420) {
+            sourceChain = OptimismSepolia;
+          } else if (currentChainId === 80002) {
+            sourceChain = PolygonAmoy;
+          } else if (currentChainId === 1328) {
+            sourceChain = SeiTestnet;
+          } else if (currentChainId === 14601) {
+            sourceChain = SonicTestnet;
+          } else if (currentChainId === 1301) {
+            sourceChain = UnichainSepolia;
+          } else if (currentChainId === 4801) {
+            sourceChain = WorldChainSepolia;
           } else {
             throw new Error(
-              "Unsupported network. Please switch to Arc Testnet, Base Sepolia, Arbitrum Sepolia, or Ethereum Sepolia."
+              "Unsupported network. Please switch to a supported testnet chain."
             );
           }
 
@@ -131,7 +161,20 @@ export function useUniversalSend(
             provider: (window as any).ethereum,
             capabilities: {
               addressContext: "user-controlled",
-              supportedChains: [ArcTestnet, BaseSepolia, ArbitrumSepolia, EthereumSepolia],
+              supportedChains: [
+                ArcTestnet,
+                BaseSepolia,
+                ArbitrumSepolia,
+                EthereumSepolia,
+                AvalancheFuji,
+                HyperEVMTestnet,
+                OptimismSepolia,
+                PolygonAmoy,
+                SeiTestnet,
+                SonicTestnet,
+                UnichainSepolia,
+                WorldChainSepolia,
+              ],
             },
           });
 

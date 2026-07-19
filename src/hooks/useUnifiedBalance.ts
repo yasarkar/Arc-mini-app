@@ -82,6 +82,14 @@ const USDC_CONTRACTS = {
   base: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   arbitrum: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
   ethereum: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+  avalanche: "0x5425890298aed601595a70ab815c96711a31bc65",
+  hyperEvm: "0x2B3370eE501B4a559b57D449569354196457D8Ab",
+  optimism: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7",
+  polygon: "0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582",
+  sei: "0x4fCF1784B31630811181f670Aea7A7bEF803eaED",
+  sonic: "0x0BA304580ee7c9a980CF72e55f5Ed2E9fd30Bc51",
+  unichain: "0x31d0220469e10c4E71834a79b1f276d740d3768F",
+  worldChain: "0x66145f38cBAC35Ca6F1Dfb4914dF98F1614aeA88",
 };
 
 // ---------------------------------------------------------------------------
@@ -104,6 +112,14 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
   const [arbitrumSimBalance, setArbitrumSimBalance] = useState<number>(80.00);
   const [ethereumSimBalance, setEthereumSimBalance] = useState<number>(35.00);
   const [arcSimBalance, setArcSimBalance] = useState<number>(0.00);
+  const [avalancheSimBalance, setAvalancheSimBalance] = useState<number>(15.00);
+  const [hyperEvmSimBalance, setHyperEvmSimBalance] = useState<number>(10.00);
+  const [optimismSimBalance, setOptimismSimBalance] = useState<number>(55.00);
+  const [polygonSimBalance, setPolygonSimBalance] = useState<number>(30.00);
+  const [seiSimBalance, setSeiSimBalance] = useState<number>(25.00);
+  const [sonicSimBalance, setSonicSimBalance] = useState<number>(40.00);
+  const [unichainSimBalance, setUnichainSimBalance] = useState<number>(20.00);
+  const [worldChainSimBalance, setWorldChainSimBalance] = useState<number>(12.00);
 
   const loadSimBalances = () => {
     if (typeof window !== "undefined") {
@@ -115,6 +131,14 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
       const arb = localStorage.getItem("sim_balance_arbitrum");
       const eth = localStorage.getItem("sim_balance_ethereum");
       const arc = localStorage.getItem("sim_balance_arc");
+      const avax = localStorage.getItem("sim_balance_avalanche");
+      const hype = localStorage.getItem("sim_balance_hyperEvm");
+      const op = localStorage.getItem("sim_balance_optimism");
+      const poly = localStorage.getItem("sim_balance_polygon");
+      const sei = localStorage.getItem("sim_balance_sei");
+      const son = localStorage.getItem("sim_balance_sonic");
+      const uni = localStorage.getItem("sim_balance_unichain");
+      const wc = localStorage.getItem("sim_balance_worldchain");
 
       if (sol !== null) setSolanaSimBalance(parseFloat(sol));
       else { localStorage.setItem("sim_balance_solana", "24.50"); setSolanaSimBalance(24.50); }
@@ -130,6 +154,30 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
 
       if (arc !== null) setArcSimBalance(parseFloat(arc));
       else { localStorage.setItem("sim_balance_arc", "0.00"); setArcSimBalance(0.00); }
+
+      if (avax !== null) setAvalancheSimBalance(parseFloat(avax));
+      else { localStorage.setItem("sim_balance_avalanche", "15.00"); setAvalancheSimBalance(15.00); }
+
+      if (hype !== null) setHyperEvmSimBalance(parseFloat(hype));
+      else { localStorage.setItem("sim_balance_hyperEvm", "10.00"); setHyperEvmSimBalance(10.00); }
+
+      if (op !== null) setOptimismSimBalance(parseFloat(op));
+      else { localStorage.setItem("sim_balance_optimism", "55.00"); setOptimismSimBalance(55.00); }
+
+      if (poly !== null) setPolygonSimBalance(parseFloat(poly));
+      else { localStorage.setItem("sim_balance_polygon", "30.00"); setPolygonSimBalance(30.00); }
+
+      if (sei !== null) setSeiSimBalance(parseFloat(sei));
+      else { localStorage.setItem("sim_balance_sei", "25.00"); setSeiSimBalance(25.00); }
+
+      if (son !== null) setSonicSimBalance(parseFloat(son));
+      else { localStorage.setItem("sim_balance_sonic", "40.00"); setSonicSimBalance(40.00); }
+
+      if (uni !== null) setUnichainSimBalance(parseFloat(uni));
+      else { localStorage.setItem("sim_balance_unichain", "20.00"); setUnichainSimBalance(20.00); }
+
+      if (wc !== null) setWorldChainSimBalance(parseFloat(wc));
+      else { localStorage.setItem("sim_balance_worldchain", "12.00"); setWorldChainSimBalance(12.00); }
     }
   };
 
@@ -222,6 +270,86 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
     }
   });
 
+  // 5. Avalanche Fuji USDC ERC-20
+  const { data: avaxBalanceData, isLoading: avaxBalanceLoading } = useBalance({
+    address,
+    chainId: 43113,
+    token: USDC_CONTRACTS.avalanche as `0x${string}`,
+    query: {
+      enabled: !!address,
+    }
+  });
+
+  // 6. HyperEVM Testnet USDC ERC-20
+  const { data: hypeBalanceData, isLoading: hypeBalanceLoading } = useBalance({
+    address,
+    chainId: 998,
+    token: USDC_CONTRACTS.hyperEvm as `0x${string}`,
+    query: {
+      enabled: !!address,
+    }
+  });
+
+  // 7. OP Sepolia USDC ERC-20
+  const { data: opBalanceData, isLoading: opBalanceLoading } = useBalance({
+    address,
+    chainId: 11155420,
+    token: USDC_CONTRACTS.optimism as `0x${string}`,
+    query: {
+      enabled: !!address,
+    }
+  });
+
+  // 8. Polygon Amoy USDC ERC-20
+  const { data: polyBalanceData, isLoading: polyBalanceLoading } = useBalance({
+    address,
+    chainId: 80002,
+    token: USDC_CONTRACTS.polygon as `0x${string}`,
+    query: {
+      enabled: !!address,
+    }
+  });
+
+  // 9. Sei Testnet USDC ERC-20
+  const { data: seiBalanceData, isLoading: seiBalanceLoading } = useBalance({
+    address,
+    chainId: 1328,
+    token: USDC_CONTRACTS.sei as `0x${string}`,
+    query: {
+      enabled: !!address,
+    }
+  });
+
+  // 10. Sonic Testnet USDC ERC-20
+  const { data: sonicBalanceData, isLoading: sonicBalanceLoading } = useBalance({
+    address,
+    chainId: 14601,
+    token: USDC_CONTRACTS.sonic as `0x${string}`,
+    query: {
+      enabled: !!address,
+    }
+  });
+
+  // 11. Unichain Sepolia USDC ERC-20
+  const { data: uniBalanceData, isLoading: uniBalanceLoading } = useBalance({
+    address,
+    chainId: 1301,
+    token: USDC_CONTRACTS.unichain as `0x${string}`,
+    query: {
+      enabled: !!address,
+    }
+  });
+
+  // 12. World Chain Sepolia USDC ERC-20
+  const { data: wcBalanceData, isLoading: wcBalanceLoading } = useBalance({
+    address,
+    chainId: 4801,
+    token: USDC_CONTRACTS.worldChain as `0x${string}`,
+    query: {
+      enabled: !!address,
+    }
+  });
+
   const connectedChainId = chainId ?? null;
 
   // Build the permanent portfolio breakdown
@@ -235,19 +363,19 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
       color: "#00D4AA",
       isMock: !isConnected,
     },
-    // 2. Base
+    // 2. Base Sepolia
     {
       id: "base",
-      name: "Base",
+      name: "Base Sepolia",
       symbol: "USDC",
       balance: isConnected && baseBalanceData ? parseFloat(baseBalanceData.formatted) : baseSimBalance,
       color: "#0052FF",
       isMock: !isConnected,
     },
-    // 3. Arbitrum
+    // 3. Arbitrum Sepolia
     {
       id: "arbitrum",
-      name: "Arbitrum",
+      name: "Arbitrum Sepolia",
       symbol: "USDC",
       balance: isConnected && arbBalanceData ? parseFloat(arbBalanceData.formatted) : arbitrumSimBalance,
       color: "#2D374B",
@@ -262,23 +390,86 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
       color: "#627EEA",
       isMock: !isConnected,
     },
-    // 5. Solana Chain: real if wallet connected, otherwise simulated
+    // 5. Avalanche Fuji
+    {
+      id: "avalanche",
+      name: "Avalanche Fuji",
+      symbol: "USDC",
+      balance: isConnected && avaxBalanceData ? parseFloat(avaxBalanceData.formatted) : avalancheSimBalance,
+      color: "#E84142",
+      isMock: !isConnected,
+    },
+    // 6. HyperEVM Testnet
+    {
+      id: "hyperEvm",
+      name: "HyperEVM Testnet",
+      symbol: "USDC",
+      balance: isConnected && hypeBalanceData ? parseFloat(hypeBalanceData.formatted) : hyperEvmSimBalance,
+      color: "#00FFA3",
+      isMock: !isConnected,
+    },
+    // 7. OP Sepolia
+    {
+      id: "optimism",
+      name: "OP Sepolia",
+      symbol: "USDC",
+      balance: isConnected && opBalanceData ? parseFloat(opBalanceData.formatted) : optimismSimBalance,
+      color: "#FF0420",
+      isMock: !isConnected,
+    },
+    // 8. Polygon PoS Amoy
+    {
+      id: "polygon",
+      name: "Polygon PoS Amoy",
+      symbol: "USDC",
+      balance: isConnected && polyBalanceData ? parseFloat(polyBalanceData.formatted) : polygonSimBalance,
+      color: "#8247E5",
+      isMock: !isConnected,
+    },
+    // 9. Sei Testnet
+    {
+      id: "sei",
+      name: "Sei Testnet",
+      symbol: "USDC",
+      balance: isConnected && seiBalanceData ? parseFloat(seiBalanceData.formatted) : seiSimBalance,
+      color: "#9E1B1B",
+      isMock: !isConnected,
+    },
+    // 10. Solana Devnet
     {
       id: "solana",
-      name: "Solana",
+      name: "Solana Devnet",
       symbol: "USDC",
       balance: solanaAddr ? solanaBalance : solanaSimBalance,
       color: "#9945FF",
       isMock: !solanaAddr,
     },
-    // 6. Cosmos Chain: real if wallet connected, otherwise simulated
+    // 11. Sonic Testnet
     {
-      id: "cosmos",
-      name: "Cosmos Hub",
-      symbol: "ATOM",
-      balance: cosmosAddr ? cosmosBalance : 12.50,
-      color: "#E8831A",
-      isMock: !cosmosAddr,
+      id: "sonic",
+      name: "Sonic Testnet",
+      symbol: "USDC",
+      balance: isConnected && sonicBalanceData ? parseFloat(sonicBalanceData.formatted) : sonicSimBalance,
+      color: "#FF5A00",
+      isMock: !isConnected,
+    },
+    // 12. Unichain Sepolia
+    {
+      id: "unichain",
+      name: "Unichain Sepolia",
+      symbol: "USDC",
+      balance: isConnected && uniBalanceData ? parseFloat(uniBalanceData.formatted) : unichainSimBalance,
+      color: "#FF007A",
+      isMock: !isConnected,
+    },
+    // 13. World Chain Sepolia
+    {
+      id: "worldchain",
+      name: "World Chain Sepolia",
+      symbol: "USDC",
+      balance: isConnected && wcBalanceData ? parseFloat(wcBalanceData.formatted) : worldChainSimBalance,
+      color: "#3F3F46",
+      isMock: !isConnected,
     },
   ];
 
@@ -291,6 +482,14 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
     baseBalanceLoading ||
     arbBalanceLoading ||
     ethBalanceLoading ||
+    avaxBalanceLoading ||
+    hypeBalanceLoading ||
+    opBalanceLoading ||
+    polyBalanceLoading ||
+    seiBalanceLoading ||
+    sonicBalanceLoading ||
+    uniBalanceLoading ||
+    wcBalanceLoading ||
     isLoadingNonEvm;
 
   return {

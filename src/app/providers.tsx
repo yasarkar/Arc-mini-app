@@ -3,8 +3,18 @@
 import { WagmiProvider, createConfig, http } from "wagmi";
 import { injected, coinbaseWallet, walletConnect } from "wagmi/connectors";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { arcTestnet } from "@/config/arcChain";
-import { baseSepolia, arbitrumSepolia, sepolia } from "viem/chains";
+import { arcTestnet, hyperEvmTestnet, sonicTestnet } from "@/config/arcChain";
+import {
+  baseSepolia,
+  arbitrumSepolia,
+  sepolia,
+  avalancheFuji,
+  optimismSepolia,
+  polygonAmoy,
+  seiTestnet,
+  unichainSepolia,
+  worldchainSepolia,
+} from "viem/chains";
 import type { ReactNode } from "react";
 
 // ---------------------------------------------------------------------------
@@ -14,7 +24,20 @@ const WALLETCONNECT_PROJECT_ID =
   process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "YOUR_PROJECT_ID";
 
 const config = createConfig({
-  chains: [arcTestnet, baseSepolia, arbitrumSepolia, sepolia],
+  chains: [
+    arcTestnet,
+    baseSepolia,
+    arbitrumSepolia,
+    sepolia,
+    avalancheFuji,
+    optimismSepolia,
+    polygonAmoy,
+    seiTestnet,
+    unichainSepolia,
+    worldchainSepolia,
+    hyperEvmTestnet,
+    sonicTestnet,
+  ],
   connectors: [
     injected({ target: "metaMask" }),
     injected({ target: "okxWallet" }),
@@ -27,6 +50,14 @@ const config = createConfig({
     [baseSepolia.id]: http(),
     [arbitrumSepolia.id]: http(),
     [sepolia.id]: http(),
+    [avalancheFuji.id]: http(),
+    [optimismSepolia.id]: http(),
+    [polygonAmoy.id]: http(),
+    [seiTestnet.id]: http(),
+    [unichainSepolia.id]: http(),
+    [worldchainSepolia.id]: http(),
+    [hyperEvmTestnet.id]: http(),
+    [sonicTestnet.id]: http(),
   },
 });
 
