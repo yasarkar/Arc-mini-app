@@ -54,7 +54,7 @@ describe("useUnifiedBalance Hook", () => {
 
     mockBalance.mockImplementation(({ chainId }) => {
       if (chainId === 5042002) {
-        return { data: { formatted: "123.45" }, isLoading: false };
+        return { data: { formatted: "123.45", value: BigInt("123450000000000000000") }, isLoading: false };
       }
       if (chainId === 84532) {
         return { data: { formatted: "67.89" }, isLoading: false };

@@ -2,6 +2,7 @@
 
 import { useAccount, useBalance } from "wagmi";
 import { useState, useEffect } from "react";
+import { formatUnits } from "viem";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -223,11 +224,10 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
     };
   }, [solanaAddr, cosmosAddr]);
 
-  // 1. Arc Testnet USDC ERC-20
+  // 1. Arc Testnet USDC (using native balance to avoid RPC rate-limiting on contract eth_call queries)
   const { data: arcBalanceData, isLoading: arcBalanceLoading } = useBalance({
     address,
     chainId: 5042002,
-    token: USDC_CONTRACTS.arc as `0x${string}`,
     query: {
       enabled: !!address,
     }
@@ -342,7 +342,7 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
       id: "arc",
       name: "Arc Testnet",
       symbol: "USDC",
-      balance: isConnected && arcBalanceData ? parseFloat(arcBalanceData.formatted) : arcSimBalance,
+      balance: isConnected && arcBalanceData?.value ? parseFloat(formatUnits(arcBalanceData.value, 18)) : arcSimBalance,
       color: "#00D4AA",
       isMock: !isConnected,
     },
