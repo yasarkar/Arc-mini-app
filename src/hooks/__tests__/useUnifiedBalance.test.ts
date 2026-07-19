@@ -29,7 +29,6 @@ describe("useUnifiedBalance Hook", () => {
     });
 
     localStorage.setItem("sim_balance_arc", "100.00");
-    localStorage.setItem("sim_balance_solana", "50.00");
 
     const { result } = renderHook(() => useUnifiedBalance());
 
@@ -42,8 +41,8 @@ describe("useUnifiedBalance Hook", () => {
     expect(arc?.isMock).toBe(true);
 
     const solana = result.current.chains.find(c => c.id === "solana");
-    expect(solana?.balance).toBe(50.00);
-    expect(solana?.isMock).toBe(true);
+    expect(solana?.balance).toBe(0.00);
+    expect(solana?.isMock).toBe(false);
   });
 
   it("should return real balances when connected", () => {

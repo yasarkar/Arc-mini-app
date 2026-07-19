@@ -102,12 +102,11 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
   const [cosmosAddr, setCosmosAddr] = useState<string | null>(null);
 
   // Real-time fetched balances for connected non-EVM wallets
-  const [solanaBalance, setSolanaBalance] = useState<number>(24.50);
+  const [solanaBalance, setSolanaBalance] = useState<number>(0);
   const [cosmosBalance, setCosmosBalance] = useState<number>(12.50);
   const [isLoadingNonEvm, setIsLoadingNonEvm] = useState<boolean>(false);
 
   // Simulated balances synced through localStorage for otonom worker operations
-  const [solanaSimBalance, setSolanaSimBalance] = useState<number>(24.50);
   const [baseSimBalance, setBaseSimBalance] = useState<number>(45.50);
   const [arbitrumSimBalance, setArbitrumSimBalance] = useState<number>(80.00);
   const [ethereumSimBalance, setEthereumSimBalance] = useState<number>(35.00);
@@ -125,7 +124,6 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
       setSolanaAddr(localStorage.getItem("solana_address"));
       setCosmosAddr(localStorage.getItem("cosmos_address"));
 
-      const sol = localStorage.getItem("sim_balance_solana");
       const base = localStorage.getItem("sim_balance_base");
       const arb = localStorage.getItem("sim_balance_arbitrum");
       const eth = localStorage.getItem("sim_balance_ethereum");
@@ -138,8 +136,7 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
       const uni = localStorage.getItem("sim_balance_unichain");
       const wc = localStorage.getItem("sim_balance_worldchain");
 
-      if (sol !== null) setSolanaSimBalance(parseFloat(sol));
-      else { localStorage.setItem("sim_balance_solana", "24.50"); setSolanaSimBalance(24.50); }
+
 
       if (base !== null) setBaseSimBalance(parseFloat(base));
       else { localStorage.setItem("sim_balance_base", "45.50"); setBaseSimBalance(45.50); }
@@ -417,9 +414,9 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
       id: "solana",
       name: "Solana Devnet",
       symbol: "USDC",
-      balance: solanaAddr ? solanaBalance : solanaSimBalance,
+      balance: solanaBalance,
       color: "#9945FF",
-      isMock: !solanaAddr,
+      isMock: false,
     },
     // 11. Sonic Testnet
     {
