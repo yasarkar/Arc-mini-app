@@ -17,7 +17,7 @@ const ARC_RPC_URL =
  * ERC-20 view (USDC token contract) decimals = 6.
  */
 export const arcTestnet = defineChain({
-  id: 5_042_002,
+  id: 5042002,
   name: "Arc Testnet",
   nativeCurrency: {
     name: "USD Coin",
