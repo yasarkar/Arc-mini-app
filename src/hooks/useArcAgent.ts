@@ -457,23 +457,23 @@ export function useArcAgent({
 
     if (sendStatus === "success") {
       const txHash = mockJobOnchainId();
-      const actionLabel = job.actionType === "bridge" 
-        ? "Bridge" 
-        : job.actionType === "swap" 
-          ? "Takas (Swap)" 
-          : job.actionType === "stake" 
-            ? "Staking" 
+      const actionLabel = job.actionType === "bridge"
+        ? "Bridge"
+        : job.actionType === "swap"
+          ? "Takas (Swap)"
+          : job.actionType === "stake"
+            ? "Staking"
             : "Transfer";
 
       const successMsg: Message = {
         id: nextId(),
         role: "agent",
         text: `✅ **[Otonom Görev Başarıyla Gerçekleşti]**\n\n` +
-              `⚙️ **İşlem:** ${actionLabel}\n` +
-              `💰 **Tutar:** ${job.amount} ${job.fromToken || "USDC"}\n` +
-              `⛓ **Yön:** ${job.sourceChain || "Base"} → ${job.targetChain || "Arc Testnet"}\n` +
-              `🔗 **Tx Hash:** ${txHash.slice(0, 10)}...${txHash.slice(-8)}\n\n` +
-              `İşlem cüzdanınız aracılığıyla zincir üstünde kesinleştirildi. Bakiyeler güncellendi.`,
+          `⚙️ **İşlem:** ${actionLabel}\n` +
+          `💰 **Tutar:** ${job.amount} ${job.fromToken || "USDC"}\n` +
+          `⛓ **Yön:** ${job.sourceChain || "Base"} → ${job.targetChain || "Arc Testnet"}\n` +
+          `🔗 **Tx Hash:** ${txHash.slice(0, 10)}...${txHash.slice(-8)}\n\n` +
+          `İşlem cüzdanınız aracılığıyla zincir üstünde kesinleştirildi. Bakiyeler güncellendi.`,
         timestamp: new Date(),
         jobId: job.jobId,
       };
@@ -496,8 +496,8 @@ export function useArcAgent({
         id: nextId(),
         role: "agent",
         text: `⚠️ **[Otonom Görev Başarısız]**\n\n` +
-              `Cüzdandaki işlem başarısız oldu veya reddedildi:\n` +
-              `_${sendError || "Kullanıcı işlemi reddetti."}_`,
+          `Cüzdandaki işlem başarısız oldu veya reddedildi:\n` +
+          `_${sendError || "Kullanıcı işlemi reddetti."}_`,
         timestamp: new Date(),
         jobId: job.jobId,
       };
@@ -520,7 +520,7 @@ export function useArcAgent({
         const lastExec = lastExecutionRef.current[job.jobId] || 0;
 
         let shouldTrigger = false;
-        
+
         // Cüzdan bağlıysa ve ağ eşleşmesi gerekiyorsa
         const sourceChainName = job.sourceChain || "Solana";
         const isNonEvm = ["solana", "cosmos", "cosmos hub"].includes(sourceChainName.toLowerCase());
@@ -537,14 +537,14 @@ export function useArcAgent({
             srcBalance = matchedChain.balance;
           } else {
             // Fallback to local storage if not found in active list
-            const srcKey = sourceChainName.toLowerCase() === "arc testnet" 
-              ? "sim_balance_arc" 
+            const srcKey = sourceChainName.toLowerCase() === "arc testnet"
+              ? "sim_balance_arc"
               : `sim_balance_${sourceChainName.toLowerCase()}`;
             srcBalance = parseFloat(localStorage.getItem(srcKey) || "0");
           }
         } else {
-          const srcKey = sourceChainName.toLowerCase() === "arc testnet" 
-            ? "sim_balance_arc" 
+          const srcKey = sourceChainName.toLowerCase() === "arc testnet"
+            ? "sim_balance_arc"
             : `sim_balance_${sourceChainName.toLowerCase()}`;
           srcBalance = parseFloat(localStorage.getItem(srcKey) || "0");
         }
@@ -582,8 +582,8 @@ export function useArcAgent({
               id: nextId(),
               role: "agent",
               text: `⚠️ **[Otonom Görev Tetiklenemedi]**\n\n` +
-                    `Gerekli tutar (${deduct} ${job.fromToken || "USDC"}) kaynak ağda (${sourceChainName}) bulunamadı.\n` +
-                    `Mevcut bakiye: ${srcBalance} ${job.fromToken || "USDC"}. Görev beklemede.`,
+                `Gerekli tutar (${deduct} ${job.fromToken || "USDC"}) kaynak ağda (${sourceChainName}) bulunamadı.\n` +
+                `Mevcut bakiye: ${srcBalance} ${job.fromToken || "USDC"}. Görev beklemede.`,
               timestamp: new Date(),
               jobId: job.jobId,
             };
@@ -607,8 +607,8 @@ export function useArcAgent({
                   id: nextId(),
                   role: "agent",
                   text: `⚠️ **[Otonom Görev Ağı Bekliyor]**\n\n` +
-                        `**${sourceChainName}** ağından tetikleme yapmak için lütfen cüzdan ağınızı **${sourceChainName}** olarak değiştirin.\n` +
-                        `Mevcut ağ ID: ${currentChainId} · Beklenen ağ ID: ${expectedChainId}`,
+                    `**${sourceChainName}** ağından tetikleme yapmak için lütfen cüzdan ağınızı **${sourceChainName}** olarak değiştirin.\n` +
+                    `Mevcut ağ ID: ${currentChainId} · Beklenen ağ ID: ${expectedChainId}`,
                   timestamp: new Date(),
                   jobId: job.jobId,
                 };
@@ -623,10 +623,10 @@ export function useArcAgent({
               id: nextId(),
               role: "agent",
               text: `⏱ **[Otonom Görev Tetiklendi]**\n\n` +
-                    `⚙️ **İşlem:** Bridge/Transfer\n` +
-                    `💰 **Tutar:** ${deduct} ${job.fromToken || "USDC"}\n` +
-                    `⛓ **Kaynak Ağ:** ${sourceChainName}\n\n` +
-                    `İşlemi başlatmak için cüzdanınızda (MetaMask vb.) açılan pencereyi onaylayın.`,
+                `⚙️ **İşlem:** Bridge/Transfer\n` +
+                `💰 **Tutar:** ${deduct} ${job.fromToken || "USDC"}\n` +
+                `⛓ **Kaynak Ağ:** ${sourceChainName}\n\n` +
+                `İşlemi başlatmak için cüzdanınızda (MetaMask vb.) açılan pencereyi onaylayın.`,
               timestamp: new Date(),
               jobId: job.jobId,
             };
@@ -642,7 +642,7 @@ export function useArcAgent({
                   id: nextId(),
                   role: "agent",
                   text: `❌ **[Otonom Görev İptal Edildi]**\n\n` +
-                        `İşlem cüzdanda onaylanmadı veya reddedildi.`,
+                    `İşlem cüzdanda onaylanmadı veya reddedildi.`,
                   timestamp: new Date(),
                   jobId: job.jobId,
                 },
@@ -653,11 +653,11 @@ export function useArcAgent({
             lastExecutionRef.current[job.jobId] = now;
 
             const targetChainName = job.targetChain || "Arc";
-            const srcKey = sourceChainName.toLowerCase() === "arc testnet" 
-              ? "sim_balance_arc" 
+            const srcKey = sourceChainName.toLowerCase() === "arc testnet"
+              ? "sim_balance_arc"
               : `sim_balance_${sourceChainName.toLowerCase()}`;
-            const targetKey = targetChainName.toLowerCase() === "arc testnet" 
-              ? "sim_balance_arc" 
+            const targetKey = targetChainName.toLowerCase() === "arc testnet"
+              ? "sim_balance_arc"
               : `sim_balance_${targetChainName.toLowerCase()}`;
 
             localStorage.setItem(srcKey, (srcBalance - deduct).toFixed(2));
@@ -668,23 +668,23 @@ export function useArcAgent({
             window.dispatchEvent(new Event("balance-update"));
 
             const txHash = mockJobOnchainId();
-            const actionLabel = job.actionType === "bridge" 
-              ? "Bridge" 
-              : job.actionType === "swap" 
-                ? "Takas (Swap)" 
-                : job.actionType === "stake" 
-                  ? "Staking" 
+            const actionLabel = job.actionType === "bridge"
+              ? "Bridge"
+              : job.actionType === "swap"
+                ? "Takas (Swap)"
+                : job.actionType === "stake"
+                  ? "Staking"
                   : "Transfer";
 
             const successMsg: Message = {
               id: nextId(),
               role: "agent",
               text: `⏱ **[Otonom Görev Tetiklendi - Simüle]**\n\n` +
-                    `⚙️ **İşlem:** ${actionLabel}\n` +
-                    `💰 **Tutar:** ${deduct} ${job.fromToken || "USDC"}\n` +
-                    `⛓ **Yön:** ${sourceChainName} → ${targetChainName}\n` +
-                    `🔗 **Simüle Tx Hash:** ${txHash.slice(0, 10)}...${txHash.slice(-8)}\n\n` +
-                    `İşlem simüle ağda otonom olarak gerçekleştirildi. Bakiyeler güncellendi.`,
+                `⚙️ **İşlem:** ${actionLabel}\n` +
+                `💰 **Tutar:** ${deduct} ${job.fromToken || "USDC"}\n` +
+                `⛓ **Yön:** ${sourceChainName} → ${targetChainName}\n` +
+                `🔗 **Simüle Tx Hash:** ${txHash.slice(0, 10)}...${txHash.slice(-8)}\n\n` +
+                `İşlem simüle ağda otonom olarak gerçekleştirildi. Bakiyeler güncellendi.`,
               timestamp: new Date(),
               jobId: job.jobId,
             };
