@@ -76,7 +76,7 @@ vercel --prod
 3. Framework Preset: **Next.js** (otomatik algılanır)
 4. Root Directory: `./` (varsayılan)
 5. Environment Variables:
-   - `NEXT_PUBLIC_ARC_RPC_URL` → `https://testnet.arc.io/rpc`
+   - `NEXT_PUBLIC_ARC_RPC_URL` → `https://rpc.testnet.arc.network`
 6. **Deploy** → her `git push`'ta otomatik yeniden dağıtım
 
 ### Canlı Ortam Testleri
