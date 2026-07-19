@@ -12,7 +12,6 @@ import {
   AvalancheFuji,
   HyperEVMTestnet,
   OptimismSepolia,
-  PolygonAmoy,
   SeiTestnet,
   SonicTestnet,
   UnichainSepolia,
@@ -131,8 +130,6 @@ export function useUniversalSend(
             sourceChain = HyperEVMTestnet;
           } else if (currentChainId === 11155420) {
             sourceChain = OptimismSepolia;
-          } else if (currentChainId === 80002) {
-            sourceChain = PolygonAmoy;
           } else if (currentChainId === 1328) {
             sourceChain = SeiTestnet;
           } else if (currentChainId === 14601) {
@@ -169,7 +166,6 @@ export function useUniversalSend(
                 AvalancheFuji,
                 HyperEVMTestnet,
                 OptimismSepolia,
-                PolygonAmoy,
                 SeiTestnet,
                 SonicTestnet,
                 UnichainSepolia,

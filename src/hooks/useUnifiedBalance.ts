@@ -85,7 +85,6 @@ const USDC_CONTRACTS = {
   avalanche: "0x5425890298aed601595a70ab815c96711a31bc65",
   hyperEvm: "0x2B3370eE501B4a559b57D449569354196457D8Ab",
   optimism: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7",
-  polygon: "0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582",
   sei: "0x4fCF1784B31630811181f670Aea7A7bEF803eaED",
   sonic: "0x0BA304580ee7c9a980CF72e55f5Ed2E9fd30Bc51",
   unichain: "0x31d0220469e10c4E71834a79b1f276d740d3768F",
@@ -115,7 +114,6 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
   const [avalancheSimBalance, setAvalancheSimBalance] = useState<number>(15.00);
   const [hyperEvmSimBalance, setHyperEvmSimBalance] = useState<number>(10.00);
   const [optimismSimBalance, setOptimismSimBalance] = useState<number>(55.00);
-  const [polygonSimBalance, setPolygonSimBalance] = useState<number>(30.00);
   const [seiSimBalance, setSeiSimBalance] = useState<number>(25.00);
   const [sonicSimBalance, setSonicSimBalance] = useState<number>(40.00);
   const [unichainSimBalance, setUnichainSimBalance] = useState<number>(20.00);
@@ -134,7 +132,6 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
       const avax = localStorage.getItem("sim_balance_avalanche");
       const hype = localStorage.getItem("sim_balance_hyperEvm");
       const op = localStorage.getItem("sim_balance_optimism");
-      const poly = localStorage.getItem("sim_balance_polygon");
       const sei = localStorage.getItem("sim_balance_sei");
       const son = localStorage.getItem("sim_balance_sonic");
       const uni = localStorage.getItem("sim_balance_unichain");
@@ -163,9 +160,6 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
 
       if (op !== null) setOptimismSimBalance(parseFloat(op));
       else { localStorage.setItem("sim_balance_optimism", "55.00"); setOptimismSimBalance(55.00); }
-
-      if (poly !== null) setPolygonSimBalance(parseFloat(poly));
-      else { localStorage.setItem("sim_balance_polygon", "30.00"); setPolygonSimBalance(30.00); }
 
       if (sei !== null) setSeiSimBalance(parseFloat(sei));
       else { localStorage.setItem("sim_balance_sei", "25.00"); setSeiSimBalance(25.00); }
@@ -300,16 +294,6 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
     }
   });
 
-  // 8. Polygon Amoy USDC ERC-20
-  const { data: polyBalanceData, isLoading: polyBalanceLoading } = useBalance({
-    address,
-    chainId: 80002,
-    token: USDC_CONTRACTS.polygon as `0x${string}`,
-    query: {
-      enabled: !!address,
-    }
-  });
-
   // 9. Sei Testnet USDC ERC-20
   const { data: seiBalanceData, isLoading: seiBalanceLoading } = useBalance({
     address,
@@ -417,15 +401,6 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
       color: "#FF0420",
       isMock: !isConnected,
     },
-    // 8. Polygon PoS Amoy
-    {
-      id: "polygon",
-      name: "Polygon PoS Amoy",
-      symbol: "USDC",
-      balance: isConnected && polyBalanceData ? parseFloat(polyBalanceData.formatted) : polygonSimBalance,
-      color: "#8247E5",
-      isMock: !isConnected,
-    },
     // 9. Sei Testnet
     {
       id: "sei",
@@ -485,7 +460,6 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
     avaxBalanceLoading ||
     hypeBalanceLoading ||
     opBalanceLoading ||
-    polyBalanceLoading ||
     seiBalanceLoading ||
     sonicBalanceLoading ||
     uniBalanceLoading ||

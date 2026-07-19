@@ -173,7 +173,6 @@ function parseIntent(text: string): ParsedIntent {
     "avalanche",
     "hyperEvm",
     "optimism",
-    "polygon",
     "sei",
     "sonic",
     "unichain",
