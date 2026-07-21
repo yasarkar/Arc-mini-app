@@ -342,7 +342,7 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
       id: "arc",
       name: "Arc Testnet",
       symbol: "USDC",
-      balance: isConnected && arcBalanceData?.value ? parseFloat(formatUnits(arcBalanceData.value, 18)) : arcSimBalance,
+      balance: isConnected && arcBalanceData ? parseFloat(arcBalanceData.formatted) : arcSimBalance,
       color: "#00D4AA",
       isMock: !isConnected,
     },
