@@ -14,6 +14,7 @@ import {
   unichainSepolia,
   worldchainSepolia,
 } from "viem/chains";
+import { WalletAdapterProvider } from "@/context/WalletAdapterContext";
 import type { ReactNode } from "react";
 
 // ---------------------------------------------------------------------------
@@ -64,13 +65,13 @@ const config = createConfig({
 const queryClient = new QueryClient();
 
 // ---------------------------------------------------------------------------
-// Root provider — wraps the entire app with Wagmi + TanStack Query
+// Root provider — wraps the entire app with Wagmi + TanStack Query + WalletAdapter
 // ---------------------------------------------------------------------------
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        {children}
+        <WalletAdapterProvider>{children}</WalletAdapterProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );
