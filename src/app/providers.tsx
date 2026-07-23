@@ -13,6 +13,7 @@ import {
   seiTestnet,
   unichainSepolia,
   worldchainSepolia,
+  polygonAmoy,
 } from "viem/chains";
 import { WalletAdapterProvider } from "@/context/WalletAdapterContext";
 import type { ReactNode } from "react";
@@ -36,6 +37,7 @@ const config = createConfig({
     worldchainSepolia,
     hyperEvmTestnet,
     sonicTestnet,
+    polygonAmoy,
   ],
   connectors: [
     injected({ target: "metaMask" }),
@@ -56,6 +58,7 @@ const config = createConfig({
     [worldchainSepolia.id]: http(),
     [hyperEvmTestnet.id]: http(),
     [sonicTestnet.id]: http(),
+    [polygonAmoy.id]: http(),
   },
 });
 

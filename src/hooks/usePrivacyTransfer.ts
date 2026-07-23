@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { encryptTxDetails, decryptTxDetails } from "@/utils/crypto";
+import { getStoredTransactions, saveTransactions } from "@/hooks/useTransactionHistory";
+import type { TransactionRecord } from "@/types/history";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -70,6 +72,24 @@ export function usePrivacyTransfer(): PrivacyTransferResult {
         });
         
         setLastViewingKey(viewingKey);
+
+        // Record in Transaction History
+        const currentHist = getStoredTransactions();
+        const record: TransactionRecord = {
+          id: `tx-privacy-${Date.now()}`,
+          txHash,
+          type: "PRIVACY_SEND",
+          amount: details.amount.toFixed(2),
+          token: details.symbol || "USDC",
+          fromAddress: details.sender,
+          toAddress: details.recipient,
+          timestamp: details.timestamp || Date.now(),
+          vkeyArc: viewingKey,
+          status: "SUCCESS",
+          explorerUrl: `https://testnet.arcscan.app/tx/${txHash}`,
+        };
+        saveTransactions([record, ...currentHist]);
+
         return viewingKey;
       } catch (e) {
         console.error("Failed to generate cryptographic viewing key:", e);
