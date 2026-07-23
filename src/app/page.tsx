@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
-import { useAccount, useDisconnect } from "wagmi";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useAccount, useDisconnect, useSwitchChain } from "wagmi";
 import { injected } from "wagmi/connectors";
 import {
   Wallet,
@@ -174,15 +174,9 @@ function ChainRow({ chain }: { chain: ChainBalance }) {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-body font-semibold text-white">{chain.name}</span>
-            {!chain.isMock ? (
-              <span className="rounded-[5px] bg-[#22C55E]/10 px-2 py-0.5 text-[10px] font-display font-bold uppercase tracking-wider text-arc-green border border-[#22C55E]/20">
-                Canlı
-              </span>
-            ) : (
-              <span className="rounded-[5px] bg-[#e9a13f]/10 px-2 py-0.5 text-[10px] font-display font-bold uppercase tracking-wider text-[#e9a13f] border border-[#e9a13f]/20">
-                Simüle
-              </span>
-            )}
+            <span className="rounded-[5px] bg-[#22C55E]/10 px-2 py-0.5 text-[10px] font-display font-bold uppercase tracking-wider text-arc-green border border-[#22C55E]/20">
+              Canlı
+            </span>
           </div>
           <span className="text-xs font-mono text-zinc-500">{chain.symbol}</span>
         </div>
@@ -195,23 +189,6 @@ function ChainRow({ chain }: { chain: ChainBalance }) {
           })}{" "}
           <span className="font-normal font-mono text-zinc-400">{chain.symbol}</span>
         </span>
-        {chain.isMock && (
-          <button
-            type="button"
-            title="Simüle Bakiye Ekle (+50)"
-            onClick={(e) => {
-              e.stopPropagation();
-              const key = `sim_balance_${chain.id}`;
-              const val = localStorage.getItem(key);
-              let current = val !== null ? parseFloat(val) : chain.balance;
-              localStorage.setItem(key, (current + 50).toFixed(2));
-              window.dispatchEvent(new Event("balance-update"));
-            }}
-            className="flex h-5 w-5 items-center justify-center rounded-[4px] bg-white/10 text-xs font-bold text-white transition-all hover:bg-white/20 hover:scale-105 active:scale-95"
-          >
-            +
-          </button>
-        )}
       </div>
     </div>
   );
@@ -505,8 +482,18 @@ function ViewingKeyDisplay({ viewingKey }: { viewingKey: string }) {
 }
 
 // =========================================================================
-// Send Funds
+// Send Funds — Supports Dynamic Source Chain & Circle Gateway Unified Balance
 // =========================================================================
+const SUPPORTED_SOURCE_CHAINS = [
+  { id: "Arc_Testnet", name: "Arc Testnet", chainId: 5042002, balanceKey: "arc" },
+  { id: "Polygon_Amoy", name: "Polygon Amoy", chainId: 80002, balanceKey: "polygon" },
+  { id: "Ethereum_Sepolia", name: "Ethereum Sepolia", chainId: 11155111, balanceKey: "ethereum" },
+  { id: "Base_Sepolia", name: "Base Sepolia", chainId: 84532, balanceKey: "base" },
+  { id: "Arbitrum_Sepolia", name: "Arbitrum Sepolia", chainId: 421614, balanceKey: "arbitrum" },
+  { id: "HyperEVM_Testnet", name: "HyperEVM Testnet", chainId: 998, balanceKey: "hyperEvm" },
+  { id: "Optimism_Sepolia", name: "OP Sepolia", chainId: 11155420, balanceKey: "optimism" },
+];
+
 function SendFunds({
   isConnected,
   totalUnified,
@@ -518,6 +505,7 @@ function SendFunds({
   sendStatus,
   sendError,
   resetSend,
+  chains = [],
 }: {
   isConnected: boolean;
   totalUnified: number;
@@ -525,15 +513,35 @@ function SendFunds({
   isPrivateMode: boolean;
   onTogglePrivacy: () => void;
   generateViewingKey: (txHash: string, details: PrivateTxDetails) => Promise<string>;
-  executeSend: (toAddress: string, amount: number) => Promise<void>;
+  executeSend: (
+    toAddress: string,
+    amount: number,
+    sourceChain?: string,
+    useUnifiedBalance?: boolean
+  ) => Promise<void>;
   sendStatus: SendStatus;
   sendError: string | null;
   resetSend: () => void;
+  chains?: ChainBalance[];
 }) {
+  const { chainId } = useAccount();
+  const { switchChainAsync } = useSwitchChain();
+
   const [toAddress, setToAddress] = useState("");
   const [amountStr, setAmountStr] = useState("");
+  const [sourceChain, setSourceChain] = useState<string>("Arc_Testnet");
+  const [useUnifiedBalance, setUseUnifiedBalance] = useState<boolean>(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
+
   const [lastViewingKey, setLastViewingKey] = useState<string | null>(null);
   const [txCompleted, setTxCompleted] = useState(false);
+
+  // Selected source chain balance helper
+  const selectedChainObj = SUPPORTED_SOURCE_CHAINS.find((c) => c.id === sourceChain) || SUPPORTED_SOURCE_CHAINS[0];
+  const selectedChainBalance = useMemo(() => {
+    const matched = chains.find((c) => c.id === selectedChainObj.balanceKey);
+    return matched ? matched.balance : 0;
+  }, [chains, selectedChainObj]);
 
   useEffect(() => {
     if (sendStatus === "success" && !txCompleted && isPrivateMode) {
@@ -549,11 +557,13 @@ function SendFunds({
       };
 
       setTxCompleted(true);
-      generateViewingKey(mockDetails.txHash, mockDetails).then((vkey) => {
-        setLastViewingKey(vkey);
-      }).catch((e) => {
-        console.error("Failed to generate viewing key in SendFunds:", e);
-      });
+      generateViewingKey(mockDetails.txHash, mockDetails)
+        .then((vkey) => {
+          setLastViewingKey(vkey);
+        })
+        .catch((e) => {
+          console.error("Failed to generate viewing key in SendFunds:", e);
+        });
     }
   }, [sendStatus, txCompleted, isPrivateMode, toAddress, amountStr, generateViewingKey]);
 
@@ -562,36 +572,117 @@ function SendFunds({
     if (isNaN(amount) || amount <= 0) return;
     setTxCompleted(false);
     setLastViewingKey(null);
-    await executeSend(toAddress.trim(), amount);
-  }, [amountStr, toAddress, executeSend]);
+    setSwitchError(null);
+
+    // Network Switching Check if not using Unified Balance
+    if (!useUnifiedBalance && chainId && selectedChainObj.chainId && chainId !== selectedChainObj.chainId) {
+      if (switchChainAsync) {
+        try {
+          await switchChainAsync({ chainId: selectedChainObj.chainId });
+        } catch (err: any) {
+          setSwitchError(`Lütfen cüzdanınızda ${selectedChainObj.name} ağına geçişi onaylayın.`);
+          return;
+        }
+      }
+    }
+
+    await executeSend(toAddress.trim(), amount, sourceChain, useUnifiedBalance);
+  }, [amountStr, toAddress, executeSend, sourceChain, useUnifiedBalance, chainId, selectedChainObj, switchChainAsync]);
 
   const amount = parseFloat(amountStr) || 0;
-  const insufficient = isConnected && amount > totalUnified;
+  const availableBalance = useUnifiedBalance ? totalUnified : selectedChainBalance;
+  const insufficient = isConnected && amount > availableBalance;
 
   if (!isConnected) return null;
 
   const accentBorder = isPrivateMode ? "border-purple-500/30" : "border-white/20";
-  const accentHeader = isPrivateMode ? "text-purple-400 font-display font-bold uppercase tracking-wider" : "text-zinc-400 font-display font-bold uppercase tracking-wider";
+  const accentHeader = isPrivateMode
+    ? "text-purple-400 font-display font-bold uppercase tracking-wider"
+    : "text-zinc-400 font-display font-bold uppercase tracking-wider";
 
   return (
     <div className="mx-auto mt-8 w-full max-w-md">
       <div
-        className={`glass-panel overflow-hidden transition-all duration-300 border border-white/20 bg-white/[0.02] backdrop-blur-md ${isPrivateMode ? "shadow-[0_0_24px_rgba(168,85,247,0.1)] border-purple-500/20" : "shadow-[0_0_24px_rgba(255,255,255,0.03)]"
-          }`}
+        className={`glass-panel overflow-hidden transition-all duration-300 border border-white/20 bg-white/[0.02] backdrop-blur-md ${
+          isPrivateMode
+            ? "shadow-[0_0_24px_rgba(168,85,247,0.1)] border-purple-500/20"
+            : "shadow-[0_0_24px_rgba(255,255,255,0.03)]"
+        }`}
       >
         <div className={`border-b px-5 py-3.5 transition-colors duration-300 ${accentBorder}`}>
           <h2 className={`text-xs transition-colors duration-300 ${accentHeader}`}>
-            PARA GÖNDER
+            PARA GÖNDER (EVRENSEL TRANSFER)
           </h2>
         </div>
         <div className="p-5">
-          <div className="mb-4">
+          <div className="mb-4 space-y-3">
             <PrivacyToggle isPrivateMode={isPrivateMode} onToggle={onTogglePrivacy} />
+
+            {/* Circle Gateway Unified Balance Toggle */}
+            <div className="flex items-center justify-between rounded-xl border border-sky-sync/20 bg-sky-sync/5 px-4 py-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-sync/20">
+                  <Zap className="h-4 w-4 text-sky-sync" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white">Circle Gateway</p>
+                  <p className="text-xs text-zinc-400">Unified Balance (Tüm Ağlar)</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={useUnifiedBalance}
+                onClick={() => setUseUnifiedBalance(!useUnifiedBalance)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors duration-300 ease-out focus:outline-none ${
+                  useUnifiedBalance ? "bg-sky-sync" : "bg-zinc-700"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4.5 w-4.5 transform rounded-full bg-white shadow-sm transition-transform duration-300 ease-out ${
+                    useUnifiedBalance ? "translate-x-[22px]" : "translate-x-[3px]"
+                  }`}
+                  style={{ height: "18px", width: "18px" }}
+                />
+              </button>
+            </div>
           </div>
+
           {sendStatus === "idle" || sendStatus === "error" ? (
             <div className="space-y-4">
+              {/* Source Chain Selector */}
+              {!useUnifiedBalance ? (
+                <div>
+                  <label className="mb-1.5 block text-xs font-display font-semibold uppercase tracking-wider text-zinc-400">
+                    Kaynak Ağ (From Network)
+                  </label>
+                  <select
+                    value={sourceChain}
+                    onChange={(e) => setSourceChain(e.target.value)}
+                    className="w-full rounded-[5px] border border-white/10 bg-[#161b22] px-4 py-2.5 text-xs font-body text-white outline-none cursor-pointer transition-all duration-300 focus:border-sky-sync/50 [color-scheme:dark]"
+                  >
+                    {SUPPORTED_SOURCE_CHAINS.map((c) => {
+                      const matched = chains.find((ch) => ch.id === c.balanceKey);
+                      const bal = matched ? matched.balance : 0;
+                      return (
+                        <option key={c.id} value={c.id} className="bg-[#161b22] text-white">
+                          {c.name} — {bal.toFixed(2)} USDC
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-300 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-400" />
+                  <span>Tüm desteklenen ağlardaki USDC bakiyeleri otomatik birleştirilerek gönderilecektir.</span>
+                </div>
+              )}
+
               <div>
-                <label className="mb-1.5 block text-xs font-display font-semibold uppercase tracking-wider text-zinc-400">Alıcı Adresi</label>
+                <label className="mb-1.5 block text-xs font-display font-semibold uppercase tracking-wider text-zinc-400">
+                  Alıcı Adresi
+                </label>
                 <input
                   type="text"
                   placeholder="0x... veya cüzdan adresi"
@@ -601,7 +692,9 @@ function SendFunds({
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-display font-semibold uppercase tracking-wider text-zinc-400">Gönderilecek Tutar</label>
+                <label className="mb-1.5 block text-xs font-display font-semibold uppercase tracking-wider text-zinc-400">
+                  Gönderilecek Tutar
+                </label>
                 <div className="relative">
                   <input
                     type="number"
@@ -612,24 +705,34 @@ function SendFunds({
                     onChange={(e) => setAmountStr(e.target.value)}
                     className="w-full rounded-[5px] border border-white/10 bg-white/[0.02] px-4 py-2.5 pr-16 text-sm font-mono text-white placeholder-zinc-600 outline-none transition-all duration-300 focus:border-sky-sync/50 focus:shadow-[0_0_12px_rgba(172,198,233,0.15)]"
                   />
-                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-mono font-medium text-zinc-500">USDC</span>
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-mono font-medium text-zinc-500">
+                    USDC
+                  </span>
                 </div>
-                {amount > 0 && <p className="mt-1.5 text-xs font-mono text-zinc-500">Available: {totalUnified.toFixed(2)} USDC</p>}
+                {amount > 0 && (
+                  <p className="mt-1.5 text-xs font-mono text-zinc-500">
+                    Kullanılabilir: {availableBalance.toFixed(2)} USDC (
+                    {useUnifiedBalance ? "Birleşik Bakiye" : selectedChainObj.name})
+                  </p>
+                )}
               </div>
-              {sendError && (
+
+              {(sendError || switchError) && (
                 <div className="flex items-start gap-2 rounded-[5px] bg-red-500/10 px-3 py-2.5 ring-1 ring-red-500/20 border border-red-500/10">
                   <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-400" />
-                  <p className="text-xs font-body text-red-300">{sendError}</p>
+                  <p className="text-xs font-body text-red-300">{sendError || switchError}</p>
                 </div>
               )}
+
               <button
                 type="button"
                 disabled={!toAddress.trim() || amount <= 0 || insufficient}
                 onClick={handleSend}
-                className={`flex w-full items-center justify-center gap-2 rounded-[5px] px-5 py-3 text-sm font-display font-bold text-white transition-all duration-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 ${isPrivateMode
+                className={`flex w-full items-center justify-center gap-2 rounded-[5px] px-5 py-3 text-sm font-display font-bold text-white transition-all duration-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 ${
+                  isPrivateMode
                     ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:shadow-[0_0_20px_rgba(124,58,237,0.25)]"
                     : "bg-gradient-to-r from-validator-blue to-sky-sync hover:shadow-[0_0_20px_rgba(172,198,233,0.25)]"
-                  }`}
+                }`}
               >
                 <Send className="h-4 w-4" />
                 {insufficient ? "Yetersiz Bakiye" : "EVRENSEL GÖNDERİMİ BAŞLAT"}
@@ -638,11 +741,18 @@ function SendFunds({
           ) : (
             <div className="space-y-4 font-body">
               <Stepper status={sendStatus} isPrivateMode={isPrivateMode} />
-              {sendStatus === "success" && lastViewingKey && <ViewingKeyDisplay viewingKey={lastViewingKey} />}
+              {sendStatus === "success" && lastViewingKey && (
+                <ViewingKeyDisplay viewingKey={lastViewingKey} />
+              )}
               {sendStatus === "success" && (
                 <button
                   type="button"
-                  onClick={() => { setToAddress(""); setAmountStr(""); setLastViewingKey(null); resetSend(); }}
+                  onClick={() => {
+                    setToAddress("");
+                    setAmountStr("");
+                    setLastViewingKey(null);
+                    resetSend();
+                  }}
                   className="mt-2 w-full rounded-[5px] border border-white/10 px-5 py-2.5 text-sm font-display font-bold text-zinc-400 transition-all duration-300 hover:border-white/20 hover:text-white active:scale-[0.98]"
                 >
                   Yeni Gönderim
@@ -1165,20 +1275,37 @@ export default function Home() {
         <span className="text-lg font-display font-bold tracking-tight text-white uppercase">
           <span className="bg-gradient-to-r from-white via-sky-sync to-white/70 bg-clip-text text-transparent">ArcFlow</span>
         </span>
-        <ConnectWallet
-          isConnected={isConnected}
-          address={activeAddress ?? undefined}
-          onOpenModal={() => setIsWalletModalOpen(true)}
-        />
+        <div className="flex items-center gap-3">
+          <a
+            href="/history"
+            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-display font-bold text-white transition-all hover:bg-white/10 hover:border-white/20 active:scale-95"
+          >
+            <Shield className="h-4 w-4 text-purple-400" />
+            <span>İşlem Geçmişi</span>
+          </a>
+          <ConnectWallet
+            isConnected={isConnected}
+            address={activeAddress ?? undefined}
+            onOpenModal={() => setIsWalletModalOpen(true)}
+          />
+        </div>
       </header>
 
       <main className="flex flex-1 flex-col items-center justify-center px-6 pb-24 pt-8 sm:px-10">
         <UnifiedBalanceDisplay total={totalUnified} isLoading={isLoading} isArcLoading={isArcLoading} isConnected={isConnected} />
         <ChainBreakdown chains={chains} isConnected={isConnected} />
         <SendFunds
-          isConnected={isConnected} totalUnified={totalUnified} realArcBalance={realArcBalance}
-          isPrivateMode={isPrivateMode} onTogglePrivacy={togglePrivacy} generateViewingKey={generateViewingKey}
-          executeSend={executeSend} sendStatus={sendStatus} sendError={sendError} resetSend={resetSend}
+          isConnected={isConnected}
+          totalUnified={totalUnified}
+          realArcBalance={realArcBalance}
+          isPrivateMode={isPrivateMode}
+          onTogglePrivacy={togglePrivacy}
+          generateViewingKey={generateViewingKey}
+          executeSend={executeSend}
+          sendStatus={sendStatus}
+          sendError={sendError}
+          resetSend={resetSend}
+          chains={chains}
         />
         <AddFundsCard isConnected={isConnected} />
         <AuditorPanel storedKeys={storedKeys} revealTransactionDetails={revealTransactionDetails} />
