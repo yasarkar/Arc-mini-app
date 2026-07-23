@@ -83,6 +83,7 @@ async function fetchCosmosBalance(address: string): Promise<number> {
 // USDC ERC-20 contract addresses on EVM networks
 const USDC_CONTRACTS = {
   arc: "0x3600000000000000000000000000000000000000",
+  polygon: "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582",
   base: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   arbitrum: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
   ethereum: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
@@ -106,84 +107,14 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
 
   // Real-time fetched balances for connected non-EVM wallets
   const [solanaBalance, setSolanaBalance] = useState<number>(0);
-  const [cosmosBalance, setCosmosBalance] = useState<number>(12.50);
+  const [cosmosBalance, setCosmosBalance] = useState<number>(0);
   const [isLoadingNonEvm, setIsLoadingNonEvm] = useState<boolean>(false);
 
-  // Simulated balances synced through localStorage for otonom worker operations
-  const [baseSimBalance, setBaseSimBalance] = useState<number>(45.50);
-  const [arbitrumSimBalance, setArbitrumSimBalance] = useState<number>(80.00);
-  const [ethereumSimBalance, setEthereumSimBalance] = useState<number>(35.00);
-  const [arcSimBalance, setArcSimBalance] = useState<number>(0.00);
-  const [avalancheSimBalance, setAvalancheSimBalance] = useState<number>(15.00);
-  const [hyperEvmSimBalance, setHyperEvmSimBalance] = useState<number>(10.00);
-  const [optimismSimBalance, setOptimismSimBalance] = useState<number>(55.00);
-  const [seiSimBalance, setSeiSimBalance] = useState<number>(25.00);
-  const [sonicSimBalance, setSonicSimBalance] = useState<number>(40.00);
-  const [unichainSimBalance, setUnichainSimBalance] = useState<number>(20.00);
-  const [worldChainSimBalance, setWorldChainSimBalance] = useState<number>(12.00);
-
-  const loadSimBalances = () => {
+  useEffect(() => {
     if (typeof window !== "undefined") {
       setSolanaAddr(localStorage.getItem("solana_address"));
       setCosmosAddr(localStorage.getItem("cosmos_address"));
-
-      const base = localStorage.getItem("sim_balance_base");
-      const arb = localStorage.getItem("sim_balance_arbitrum");
-      const eth = localStorage.getItem("sim_balance_ethereum");
-      const arc = localStorage.getItem("sim_balance_arc");
-      const avax = localStorage.getItem("sim_balance_avalanche");
-      const hype = localStorage.getItem("sim_balance_hyperEvm");
-      const op = localStorage.getItem("sim_balance_optimism");
-      const sei = localStorage.getItem("sim_balance_sei");
-      const son = localStorage.getItem("sim_balance_sonic");
-      const uni = localStorage.getItem("sim_balance_unichain");
-      const wc = localStorage.getItem("sim_balance_worldchain");
-
-
-
-      if (base !== null) setBaseSimBalance(parseFloat(base));
-      else { localStorage.setItem("sim_balance_base", "45.50"); setBaseSimBalance(45.50); }
-
-      if (arb !== null) setArbitrumSimBalance(parseFloat(arb));
-      else { localStorage.setItem("sim_balance_arbitrum", "80.00"); setArbitrumSimBalance(80.00); }
-
-      if (eth !== null) setEthereumSimBalance(parseFloat(eth));
-      else { localStorage.setItem("sim_balance_ethereum", "35.00"); setEthereumSimBalance(35.00); }
-
-      if (arc !== null) setArcSimBalance(parseFloat(arc));
-      else { localStorage.setItem("sim_balance_arc", "0.00"); setArcSimBalance(0.00); }
-
-      if (avax !== null) setAvalancheSimBalance(parseFloat(avax));
-      else { localStorage.setItem("sim_balance_avalanche", "15.00"); setAvalancheSimBalance(15.00); }
-
-      if (hype !== null) setHyperEvmSimBalance(parseFloat(hype));
-      else { localStorage.setItem("sim_balance_hyperEvm", "10.00"); setHyperEvmSimBalance(10.00); }
-
-      if (op !== null) setOptimismSimBalance(parseFloat(op));
-      else { localStorage.setItem("sim_balance_optimism", "55.00"); setOptimismSimBalance(55.00); }
-
-      if (sei !== null) setSeiSimBalance(parseFloat(sei));
-      else { localStorage.setItem("sim_balance_sei", "25.00"); setSeiSimBalance(25.00); }
-
-      if (son !== null) setSonicSimBalance(parseFloat(son));
-      else { localStorage.setItem("sim_balance_sonic", "40.00"); setSonicSimBalance(40.00); }
-
-      if (uni !== null) setUnichainSimBalance(parseFloat(uni));
-      else { localStorage.setItem("sim_balance_unichain", "20.00"); setUnichainSimBalance(20.00); }
-
-      if (wc !== null) setWorldChainSimBalance(parseFloat(wc));
-      else { localStorage.setItem("sim_balance_worldchain", "12.00"); setWorldChainSimBalance(12.00); }
     }
-  };
-
-  useEffect(() => {
-    loadSimBalances();
-    window.addEventListener("balance-update", loadSimBalances);
-    window.addEventListener("wallet-connection-update", loadSimBalances);
-    return () => {
-      window.removeEventListener("balance-update", loadSimBalances);
-      window.removeEventListener("wallet-connection-update", loadSimBalances);
-    };
   }, []);
 
   // Poll real on-chain balances if non-EVM addresses exist
@@ -242,6 +173,16 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
     chainId: 5042002,
     query: {
       enabled: !!address && !arcBalanceData,
+    }
+  });
+
+  // 1c. Polygon Amoy USDC ERC-20
+  const { data: polyBalanceData, isLoading: polyBalanceLoading } = useBalance({
+    address,
+    chainId: 80002,
+    token: USDC_CONTRACTS.polygon as `0x${string}`,
+    query: {
+      enabled: !!address,
     }
   });
 
@@ -361,72 +302,81 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
       id: "arc",
       name: "Arc Testnet",
       symbol: "USDC",
-      balance: isConnected && arcResolvedBalance !== null ? arcResolvedBalance : arcSimBalance,
+      balance: isConnected && arcResolvedBalance !== null ? arcResolvedBalance : 0,
       color: "#00D4AA",
-      isMock: !isConnected,
+      isMock: false,
+    },
+    // 1b. Polygon Amoy
+    {
+      id: "polygon",
+      name: "Polygon Amoy",
+      symbol: "USDC",
+      balance: isConnected && polyBalanceData ? parseFloat(polyBalanceData.formatted) : 0,
+      color: "#8247E5",
+      isMock: false,
     },
     // 2. Base Sepolia
     {
       id: "base",
       name: "Base Sepolia",
       symbol: "USDC",
-      balance: isConnected && baseBalanceData ? parseFloat(baseBalanceData.formatted) : baseSimBalance,
+      balance: isConnected && baseBalanceData ? parseFloat(baseBalanceData.formatted) : 0,
       color: "#0052FF",
-      isMock: !isConnected,
+      isMock: false,
     },
     // 3. Arbitrum Sepolia
     {
       id: "arbitrum",
       name: "Arbitrum Sepolia",
       symbol: "USDC",
-      balance: isConnected && arbBalanceData ? parseFloat(arbBalanceData.formatted) : arbitrumSimBalance,
+      balance: isConnected && arbBalanceData ? parseFloat(arbBalanceData.formatted) : 0,
       color: "#2D374B",
-      isMock: !isConnected,
+      isMock: false,
     },
     // 4. Ethereum Sepolia
     {
       id: "ethereum",
       name: "Ethereum Sepolia",
       symbol: "USDC",
-      balance: isConnected && ethBalanceData ? parseFloat(ethBalanceData.formatted) : ethereumSimBalance,
+      balance: isConnected && ethBalanceData ? parseFloat(ethBalanceData.formatted) : 0,
       color: "#627EEA",
-      isMock: !isConnected,
+      isMock: false,
     },
     // 5. Avalanche Fuji
     {
       id: "avalanche",
       name: "Avalanche Fuji",
       symbol: "USDC",
-      balance: isConnected && avaxBalanceData ? parseFloat(avaxBalanceData.formatted) : avalancheSimBalance,
+      balance: isConnected && avaxBalanceData ? parseFloat(avaxBalanceData.formatted) : 0,
       color: "#E84142",
-      isMock: !isConnected,
+      isMock: false,
     },
     // 6. HyperEVM Testnet
     {
       id: "hyperEvm",
       name: "HyperEVM Testnet",
       symbol: "USDC",
-      balance: isConnected && hypeBalanceData ? parseFloat(hypeBalanceData.formatted) : hyperEvmSimBalance,
+      balance: isConnected && hypeBalanceData ? parseFloat(hypeBalanceData.formatted) : 0,
       color: "#00FFA3",
-      isMock: !isConnected,
+      isMock: false,
     },
     // 7. OP Sepolia
     {
       id: "optimism",
       name: "OP Sepolia",
       symbol: "USDC",
-      balance: isConnected && opBalanceData ? parseFloat(opBalanceData.formatted) : optimismSimBalance,
+      balance: isConnected && opBalanceData ? parseFloat(opBalanceData.formatted) : 0,
       color: "#FF0420",
-      isMock: !isConnected,
+      isMock: false,
     },
     // 9. Sei Testnet
     {
       id: "sei",
       name: "Sei Testnet",
       symbol: "USDC",
-      balance: isConnected && seiBalanceData ? parseFloat(seiBalanceData.formatted) : seiSimBalance,
+      balance: isConnected && seiBalanceData ? parseFloat(seiBalanceData.formatted) : 0,
       color: "#9E1B1B",
-      isMock: !isConnected,
+      isMock: false,
     },
     // 10. Solana Devnet
     {
@@ -442,27 +392,27 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
       id: "sonic",
       name: "Sonic Testnet",
       symbol: "USDC",
-      balance: isConnected && sonicBalanceData ? parseFloat(sonicBalanceData.formatted) : sonicSimBalance,
+      balance: isConnected && sonicBalanceData ? parseFloat(sonicBalanceData.formatted) : 0,
       color: "#FF5A00",
-      isMock: !isConnected,
+      isMock: false,
     },
     // 12. Unichain Sepolia
     {
       id: "unichain",
       name: "Unichain Sepolia",
       symbol: "USDC",
-      balance: isConnected && uniBalanceData ? parseFloat(uniBalanceData.formatted) : unichainSimBalance,
+      balance: isConnected && uniBalanceData ? parseFloat(uniBalanceData.formatted) : 0,
       color: "#FF007A",
-      isMock: !isConnected,
+      isMock: false,
     },
     // 13. World Chain Sepolia
     {
       id: "worldchain",
       name: "World Chain Sepolia",
       symbol: "USDC",
-      balance: isConnected && wcBalanceData ? parseFloat(wcBalanceData.formatted) : worldChainSimBalance,
+      balance: isConnected && wcBalanceData ? parseFloat(wcBalanceData.formatted) : 0,
       color: "#3F3F46",
-      isMock: !isConnected,
+      isMock: false,
     },
   ];
 

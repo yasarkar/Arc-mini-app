@@ -17,7 +17,7 @@ describe("useUnifiedBalance Hook", () => {
     vi.resetAllMocks();
   });
 
-  it("should return simulated balances when disconnected", () => {
+  it("should return zero balances when disconnected", () => {
     mockAccount.mockReturnValue({
       address: undefined,
       isConnected: false,
@@ -28,19 +28,17 @@ describe("useUnifiedBalance Hook", () => {
       isLoading: false,
     });
 
-    localStorage.setItem("sim_balance_arc", "100.00");
-
     const { result } = renderHook(() => useUnifiedBalance());
 
-    // Connection should be false (unless solanaAddress or cosmosAddress exists in localStorage)
+    // Connection should be false
     expect(result.current.isConnected).toBe(false);
-    
-    // Find Arc balance row
-    const arc = result.current.chains.find(c => c.id === "arc");
-    expect(arc?.balance).toBe(100.00);
-    expect(arc?.isMock).toBe(true);
 
-    const solana = result.current.chains.find(c => c.id === "solana");
+    // Find Arc balance row
+    const arc = result.current.chains.find((c) => c.id === "arc");
+    expect(arc?.balance).toBe(0.00);
+    expect(arc?.isMock).toBe(false);
+
+    const solana = result.current.chains.find((c) => c.id === "solana");
     expect(solana?.balance).toBe(0.00);
     expect(solana?.isMock).toBe(false);
   });
