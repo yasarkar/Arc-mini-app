@@ -24,6 +24,8 @@ export interface UnifiedBalanceResult {
   chains: ChainBalance[];
   /** Whether the real onchain balance is still loading */
   isLoading: boolean;
+  /** Whether core Arc Testnet balance is loading */
+  isArcLoading: boolean;
   /** Whether the wallet is connected */
   isConnected: boolean;
   /** The chain ID the user's wallet is currently connected to */
@@ -224,13 +226,22 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
     };
   }, [solanaAddr, cosmosAddr]);
 
-  // 1. Arc Testnet USDC ERC-20 (relying on the recommended standard ERC-20 interface)
+  // 1a. Arc Testnet USDC ERC-20 (relying on the recommended standard ERC-20 interface)
   const { data: arcBalanceData, isLoading: arcBalanceLoading } = useBalance({
     address,
     chainId: 5042002,
     token: USDC_CONTRACTS.arc as `0x${string}`,
     query: {
       enabled: !!address,
+    }
+  });
+
+  // 1b. Arc Testnet Native USDC fallback (18 decimals native EVM gas token balance)
+  const { data: arcNativeBalanceData, isLoading: arcNativeLoading } = useBalance({
+    address,
+    chainId: 5042002,
+    query: {
+      enabled: !!address && !arcBalanceData,
     }
   });
 
@@ -336,6 +347,13 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
 
   const connectedChainId = chainId ?? null;
 
+  // Resolve Arc balance: Prefer ERC-20 data (6 decimals), fallback to native EVM balance (18 decimals)
+  const arcResolvedBalance = arcBalanceData
+    ? parseFloat(arcBalanceData.formatted)
+    : arcNativeBalanceData
+    ? parseFloat(formatUnits(arcNativeBalanceData.value, 18))
+    : null;
+
   // Build the permanent portfolio breakdown
   const chains: ChainBalance[] = [
     // 1. Arc Testnet
@@ -343,7 +361,7 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
       id: "arc",
       name: "Arc Testnet",
       symbol: "USDC",
-      balance: isConnected && arcBalanceData ? parseFloat(arcBalanceData.formatted) : arcSimBalance,
+      balance: isConnected && arcResolvedBalance !== null ? arcResolvedBalance : arcSimBalance,
       color: "#00D4AA",
       isMock: !isConnected,
     },
@@ -466,10 +484,13 @@ export function useUnifiedBalance(): UnifiedBalanceResult {
     wcBalanceLoading ||
     isLoadingNonEvm;
 
+  const isArcLoading = isConnected && arcBalanceLoading && arcNativeLoading;
+
   return {
     totalUnified,
     chains,
     isLoading,
+    isArcLoading,
     isConnected: anyConnected,
     connectedChainId,
     solanaAddress: solanaAddr,
