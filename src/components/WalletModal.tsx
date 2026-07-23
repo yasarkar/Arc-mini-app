@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { useConnect } from "wagmi";
 import { injected, coinbaseWallet, walletConnect } from "wagmi/connectors";
+import { useWalletAdapter } from "@/context/WalletAdapterContext";
 import {
   X,
   Wallet,
@@ -323,6 +324,7 @@ function RightPanel() {
 // =========================================================================
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const { connectAsync, isPending } = useConnect();
+  const { createAdapterFromProvider } = useWalletAdapter();
   
   const [connectingNonEvmId, setConnectingNonEvmId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -369,7 +371,12 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
       if (wallet.type === "evm" && wallet.connector) {
         try {
-          await connectAsync({ connector: wallet.connector() });
+          const conn = wallet.connector();
+          await connectAsync({ connector: conn });
+          const provider = (window as any)?.ethereum ?? (window as any)?.okxwallet;
+          if (provider) {
+            await createAdapterFromProvider(provider);
+          }
           onClose(); // close modal on success
         } catch (err: any) {
           console.error("EVM Connection error:", err);
