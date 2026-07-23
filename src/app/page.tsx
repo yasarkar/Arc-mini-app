@@ -70,38 +70,85 @@ function WalletIndicator() {
   );
 }
 
+// Smooth number interpolation hook for balance changes
+function useAnimatedNumber(targetValue: number, duration = 600) {
+  const [currentValue, setCurrentValue] = useState(targetValue);
+  const prevValueRef = useRef(targetValue);
+  const startTimestampRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const startValue = prevValueRef.current;
+    const endValue = targetValue;
+    if (startValue === endValue) return;
+
+    let animationFrameId: number;
+
+    const step = (timestamp: number) => {
+      if (!startTimestampRef.current) startTimestampRef.current = timestamp;
+      const progress = Math.min((timestamp - startTimestampRef.current) / duration, 1);
+      const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      const nextValue = startValue + (endValue - startValue) * easeProgress;
+      setCurrentValue(nextValue);
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(step);
+      } else {
+        prevValueRef.current = endValue;
+        startTimestampRef.current = null;
+      }
+    };
+
+    startTimestampRef.current = null;
+    animationFrameId = requestAnimationFrame(step);
+
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [targetValue, duration]);
+
+  return currentValue;
+}
+
 // =========================================================================
 // Unified Balance
 // =========================================================================
 function UnifiedBalanceDisplay({
   total,
-  isLoading,
+  isArcLoading,
   isConnected,
 }: {
   total: number;
-  isLoading: boolean;
+  isLoading?: boolean;
+  isArcLoading?: boolean;
   isConnected: boolean;
 }) {
-  const display =
-    !isConnected || isLoading
-      ? "—.—"
-      : total.toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 6,
-        });
+  const animatedTotal = useAnimatedNumber(total, 600);
+
+  const display = animatedTotal.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  const showInitialSkeleton = isConnected && isArcLoading;
 
   return (
-    <div className="text-center select-none">
+    <div className="text-center select-none flex flex-col items-center">
       <p className="mb-3 text-[11px] font-display font-bold uppercase tracking-[0.25em] text-zinc-500">
         UNIFIED BALANCE
       </p>
-      <h1 className="text-6xl sm:text-7xl font-display font-bold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.15)]">
-        ${display}
-      </h1>
-      {isConnected && (
+
+      {showInitialSkeleton ? (
+        <div className="h-16 sm:h-20 w-64 sm:w-80 rounded-2xl bg-white/[0.03] animate-pulse border border-white/10 flex items-center justify-center my-1">
+          <span className="text-2xl font-mono text-zinc-500 font-bold tracking-widest">$ •••.••</span>
+        </div>
+      ) : (
+        <h1 className="text-6xl sm:text-7xl font-display font-bold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.15)] transition-all duration-300">
+          ${display}
+        </h1>
+      )}
+
+      {isConnected && !showInitialSkeleton && (
         <p className="mt-3 text-sm font-body text-zinc-400">
           ≈ {display} USDC —{" "}
-          <span className="text-zinc-600">tüm ağlar</span>
+          <span className="text-zinc-600">tüm ağlar birleşik</span>
         </p>
       )}
     </div>
@@ -180,20 +227,48 @@ function ChainBreakdown({
   chains: ChainBalance[];
   isConnected: boolean;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   if (!isConnected) return null;
 
+  // Sort chains descending by USDC balance
+  const sortedChains = [...chains].sort((a, b) => b.balance - a.balance);
+
+  // Take top 5 or all if expanded
+  const visibleChains = isExpanded ? sortedChains : sortedChains.slice(0, 5);
+  const hasMore = sortedChains.length > 5;
+
   return (
-    <div className="mx-auto mt-8 w-full max-w-md overflow-hidden rounded-xl border border-white/20 bg-white/[0.02] backdrop-blur-md shadow-[0_0_24px_rgba(255,255,255,0.06)]">
-      <div className="border-b border-white/10 px-5 py-3.5">
+    <div className="mx-auto mt-8 w-full max-w-md overflow-hidden rounded-xl border border-white/20 bg-white/[0.02] backdrop-blur-md shadow-[0_0_24px_rgba(255,255,255,0.06)] transition-all duration-300">
+      <div className="border-b border-white/10 px-5 py-3.5 flex items-center justify-between">
         <h2 className="text-xs font-display font-bold uppercase tracking-[0.15em] text-zinc-400">
           NETWORK BREAKDOWN
         </h2>
+        <span className="text-[10px] font-mono text-zinc-500">
+          {sortedChains.length} Ağ
+        </span>
       </div>
       <div className="divide-y divide-white/10 px-2 py-1">
-        {chains.map((chain) => (
+        {visibleChains.map((chain) => (
           <ChainRow key={chain.id} chain={chain} />
         ))}
       </div>
+      {hasMore && (
+        <div className="border-t border-white/10 bg-white/[0.01] p-1.5 text-center">
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-display font-semibold uppercase tracking-wider text-zinc-400 transition-all duration-300 hover:bg-white/[0.05] hover:text-white active:scale-[0.98]"
+          >
+            <span>{isExpanded ? "Daha Az Görüntüle" : "Daha Fazlasını Görüntüle"}</span>
+            {isExpanded ? (
+              <ChevronUp className="h-4 w-4 text-sky-sync transition-transform" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-sky-sync transition-transform" />
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -239,17 +314,15 @@ function PrivacyToggle({
 }) {
   return (
     <div
-      className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-all duration-300 ${
-        isPrivateMode
+      className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-all duration-300 ${isPrivateMode
           ? "border-purple-500/30 bg-purple-500/5 shadow-[0_0_15px_rgba(168,85,247,0.12)]"
           : "border-white/[0.06] bg-white/[0.02]"
-      }`}
+        }`}
     >
       <div className="flex items-center gap-3">
         <div
-          className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-300 ${
-            isPrivateMode ? "bg-purple-500/20" : "bg-zinc-800"
-          }`}
+          className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-300 ${isPrivateMode ? "bg-purple-500/20" : "bg-zinc-800"
+            }`}
         >
           {isPrivateMode ? (
             <Shield className="h-4 w-4 text-purple-400" />
@@ -267,14 +340,12 @@ function PrivacyToggle({
         role="switch"
         aria-checked={isPrivateMode}
         onClick={onToggle}
-        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors duration-300 ease-out focus:outline-none ${
-          isPrivateMode ? "bg-purple-500" : "bg-zinc-700"
-        }`}
+        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors duration-300 ease-out focus:outline-none ${isPrivateMode ? "bg-purple-500" : "bg-zinc-700"
+          }`}
       >
         <span
-          className={`inline-block h-4.5 w-4.5 transform rounded-full bg-white shadow-sm transition-transform duration-300 ease-out ${
-            isPrivateMode ? "translate-x-[22px]" : "translate-x-[3px]"
-          }`}
+          className={`inline-block h-4.5 w-4.5 transform rounded-full bg-white shadow-sm transition-transform duration-300 ease-out ${isPrivateMode ? "translate-x-[22px]" : "translate-x-[3px]"
+            }`}
           style={{ height: "18px", width: "18px" }}
         />
       </button>
@@ -290,22 +361,22 @@ const STEP_DEFS: {
   label: string;
   description: string;
 }[] = [
-  {
-    key: "aggregating",
-    label: "Likidite Toplanıyor",
-    description: "Diğer ağlardan USDC bakiyeleri toplanıyor...",
-  },
-  {
-    key: "bridging",
-    label: "Circle CCTP Köprüleme",
-    description: "Base / Arbitrum / Solana → Arc L1 köprüsü kuruluyor",
-  },
-  {
-    key: "finalizing",
-    label: "Arc L1 Onayı",
-    description: "Nihai transfer Arc ağında kesinleşiyor (&lt;1s)",
-  },
-];
+    {
+      key: "aggregating",
+      label: "Likidite Toplanıyor",
+      description: "Diğer ağlardan USDC bakiyeleri toplanıyor...",
+    },
+    {
+      key: "bridging",
+      label: "Circle CCTP Köprüleme",
+      description: "Base / Arbitrum / Solana → Arc L1 köprüsü kuruluyor",
+    },
+    {
+      key: "finalizing",
+      label: "Arc L1 Onayı",
+      description: "Nihai transfer Arc ağında kesinleşiyor (&lt;1s)",
+    },
+  ];
 
 function Stepper({
   status,
@@ -505,9 +576,8 @@ function SendFunds({
   return (
     <div className="mx-auto mt-8 w-full max-w-md">
       <div
-        className={`glass-panel overflow-hidden transition-all duration-300 border border-white/20 bg-white/[0.02] backdrop-blur-md ${
-          isPrivateMode ? "shadow-[0_0_24px_rgba(168,85,247,0.1)] border-purple-500/20" : "shadow-[0_0_24px_rgba(255,255,255,0.03)]"
-        }`}
+        className={`glass-panel overflow-hidden transition-all duration-300 border border-white/20 bg-white/[0.02] backdrop-blur-md ${isPrivateMode ? "shadow-[0_0_24px_rgba(168,85,247,0.1)] border-purple-500/20" : "shadow-[0_0_24px_rgba(255,255,255,0.03)]"
+          }`}
       >
         <div className={`border-b px-5 py-3.5 transition-colors duration-300 ${accentBorder}`}>
           <h2 className={`text-xs transition-colors duration-300 ${accentHeader}`}>
@@ -556,11 +626,10 @@ function SendFunds({
                 type="button"
                 disabled={!toAddress.trim() || amount <= 0 || insufficient}
                 onClick={handleSend}
-                className={`flex w-full items-center justify-center gap-2 rounded-[5px] px-5 py-3 text-sm font-display font-bold text-white transition-all duration-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 ${
-                  isPrivateMode
+                className={`flex w-full items-center justify-center gap-2 rounded-[5px] px-5 py-3 text-sm font-display font-bold text-white transition-all duration-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 ${isPrivateMode
                     ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:shadow-[0_0_20px_rgba(124,58,237,0.25)]"
                     : "bg-gradient-to-r from-validator-blue to-sky-sync hover:shadow-[0_0_20px_rgba(172,198,233,0.25)]"
-                }`}
+                  }`}
               >
                 <Send className="h-4 w-4" />
                 {insufficient ? "Yetersiz Bakiye" : "EVRENSEL GÖNDERİMİ BAŞLAT"}
@@ -649,8 +718,8 @@ function AuditorPanel({
               <div className="space-y-2">
                 {[{ l: "Gönderen", v: truncateAddress(revealedTx.sender) }, { l: "Alıcı", v: truncateAddress(revealedTx.recipient) }, { l: "Tutar", v: `${revealedTx.amount.toFixed(2)} ${revealedTx.symbol}` }, { l: "Zaman", v: formatTime(revealedTx.timestamp) }].map((r) => (
                   <div key={r.l} className="flex justify-between">
-                     <span className="text-[11px] font-body text-zinc-500">{r.l}</span>
-                     <span className="text-xs font-mono text-white">{r.v}</span>
+                    <span className="text-[11px] font-body text-zinc-500">{r.l}</span>
+                    <span className="text-xs font-mono text-white">{r.v}</span>
                   </div>
                 ))}
               </div>
@@ -837,9 +906,8 @@ function ChatMessage({
     <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
       {/* Avatar */}
       <div
-        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
-          isUser ? "bg-arc-blue/20" : "bg-gradient-to-br from-cyan-500/20 to-blue-500/20"
-        }`}
+        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${isUser ? "bg-arc-blue/20" : "bg-gradient-to-br from-cyan-500/20 to-blue-500/20"
+          }`}
       >
         {isUser ? (
           <span className="text-xs font-bold text-arc-blue">U</span>
@@ -851,11 +919,10 @@ function ChatMessage({
       {/* Bubble */}
       <div className={`max-w-[85%] ${isUser ? "text-right" : ""}`}>
         <div
-          className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-            isUser
+          className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${isUser
               ? "bg-arc-blue/10 text-white"
               : "bg-zinc-800/60 text-zinc-200"
-          }`}
+            }`}
           style={{ whiteSpace: "pre-wrap" }}
         >
           {msg.text}
@@ -1064,7 +1131,7 @@ function Footer() {
       <p className="text-xs text-zinc-700">
         ArcFlow — Built on{" "}
         <a href="https://testnet.arcscan.app" target="_blank" rel="noopener noreferrer"
-           className="text-zinc-500 underline underline-offset-2 transition-colors hover:text-zinc-300">
+          className="text-zinc-500 underline underline-offset-2 transition-colors hover:text-zinc-300">
           Arc Testnet
         </a>
         <span className="mx-2 text-zinc-700">·</span>
@@ -1078,7 +1145,7 @@ function Footer() {
 // Page — ArcFlow Dashboard
 // =========================================================================
 export default function Home() {
-  const { totalUnified, chains, isLoading, isConnected, activeAddress, connectedChainId } = useUnifiedBalance();
+  const { totalUnified, chains, isLoading, isArcLoading, isConnected, activeAddress, connectedChainId } = useUnifiedBalance();
   const {
     isPrivateMode, togglePrivacy, generateViewingKey,
     revealTransactionDetails, storedKeys,
@@ -1106,7 +1173,7 @@ export default function Home() {
       </header>
 
       <main className="flex flex-1 flex-col items-center justify-center px-6 pb-24 pt-8 sm:px-10">
-        <UnifiedBalanceDisplay total={totalUnified} isLoading={isLoading} isConnected={isConnected} />
+        <UnifiedBalanceDisplay total={totalUnified} isLoading={isLoading} isArcLoading={isArcLoading} isConnected={isConnected} />
         <ChainBreakdown chains={chains} isConnected={isConnected} />
         <SendFunds
           isConnected={isConnected} totalUnified={totalUnified} realArcBalance={realArcBalance}
