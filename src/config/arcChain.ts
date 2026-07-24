@@ -1,5 +1,5 @@
 import { defineChain } from "viem";
-import { AppKit } from "@circle-fin/app-kit";
+import { appKit, kit } from "@/lib/appKitClient";
 
 // ---------------------------------------------------------------------------
 // Arc Testnet — Circle App Kit Configuration & Singleton Instance
@@ -7,15 +7,14 @@ import { AppKit } from "@circle-fin/app-kit";
 export const ARC_CHAIN_NAME = "Arc_Testnet";
 export const ARC_CHAIN_ID = 5042002;
 export const ARC_RPC_URL =
-  process.env.NEXT_PUBLIC_ARC_RPC_URL ?? "https://rpc.testnet.arc.network";
+  process.env.NEXT_PUBLIC_ARC_TESTNET_RPC ??
+  process.env.NEXT_PUBLIC_ARC_RPC_URL ??
+  "https://rpc.testnet.arc.network";
 export const ARC_EXPLORER_URL = "https://testnet.arcscan.app";
 export const ARC_USDC_CONTRACT = "0x3600000000000000000000000000000000000000";
 export const ARC_USDC_DECIMALS = 6;
 
-/**
- * Singleton instance of AppKit used for Send, Bridge, Swap, and Unified Balance ops.
- */
-export const kit = new AppKit();
+export { appKit, kit };
 
 
 /**
