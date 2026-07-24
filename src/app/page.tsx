@@ -29,12 +29,14 @@ import {
   Activity,
   Zap,
   Ban,
+  ArrowRightLeft,
 } from "lucide-react";
 import { useUnifiedBalance } from "@/hooks/useUnifiedBalance";
 import { useUniversalSend } from "@/hooks/useUniversalSend";
 import { usePrivacyTransfer } from "@/hooks/usePrivacyTransfer";
 import { useArcAgent } from "@/hooks/useArcAgent";
 import WalletModal from "@/components/WalletModal";
+import BridgePanel from "@/components/BridgePanel";
 import type { ChainBalance } from "@/hooks/useUnifiedBalance";
 import type { SendStatus } from "@/hooks/useUniversalSend";
 import type { PrivateTxDetails } from "@/hooks/usePrivacyTransfer";
@@ -253,13 +255,20 @@ function ChainBreakdown({
 // =========================================================================
 // Add Funds Card
 // =========================================================================
-function AddFundsCard({ isConnected }: { isConnected: boolean }) {
+function AddFundsCard({
+  isConnected,
+  onSelectBridgeTab,
+}: {
+  isConnected: boolean;
+  onSelectBridgeTab: () => void;
+}) {
   if (!isConnected) return null;
 
   return (
     <div className="mx-auto mt-4 w-full max-w-md">
       <button
         type="button"
+        onClick={onSelectBridgeTab}
         className="group glass-panel flex w-full items-center justify-between px-5 py-4 border border-white/20 transition-all duration-300 hover:bg-white/[0.04] hover:shadow-[0_0_32px_rgba(172,198,233,0.1)] active:scale-[0.99]"
       >
         <div className="flex items-center gap-3">
@@ -267,13 +276,13 @@ function AddFundsCard({ isConnected }: { isConnected: boolean }) {
             <ArrowDownToLine className="h-5 w-5 text-sky-sync" />
           </div>
           <div className="text-left font-body">
-            <p className="text-sm font-semibold text-white">Add Funds via CCTP</p>
+            <p className="text-sm font-semibold text-white">Circle CCTP ile Bakiye Yükle (Bridge)</p>
             <p className="text-xs text-zinc-400">
-              Bridge USDC from Ethereum, Base, Arbitrum, Solana
+              Ethereum, Polygon, Base, Arbitrum ve OP ağlarından USDC aktar
             </p>
           </div>
         </div>
-        <ExternalLink className="h-4 w-4 text-zinc-500 transition-colors group-hover:text-zinc-300" />
+        <ArrowRightLeft className="h-4 w-4 text-emerald-400 transition-transform group-hover:scale-110" />
       </button>
     </div>
   );
@@ -486,7 +495,7 @@ function ViewingKeyDisplay({ viewingKey }: { viewingKey: string }) {
 // =========================================================================
 const SUPPORTED_SOURCE_CHAINS = [
   { id: "Arc_Testnet", name: "Arc Testnet", chainId: 5042002, balanceKey: "arc" },
-  { id: "Polygon_Amoy", name: "Polygon Amoy", chainId: 80002, balanceKey: "polygon" },
+  { id: "Polygon_Amoy_Testnet", name: "Polygon Amoy", chainId: 80002, balanceKey: "polygon" },
   { id: "Ethereum_Sepolia", name: "Ethereum Sepolia", chainId: 11155111, balanceKey: "ethereum" },
   { id: "Base_Sepolia", name: "Base Sepolia", chainId: 84532, balanceKey: "base" },
   { id: "Arbitrum_Sepolia", name: "Arbitrum Sepolia", chainId: 421614, balanceKey: "arbitrum" },
@@ -1262,6 +1271,7 @@ export default function Home() {
   } = usePrivacyTransfer();
 
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"send" | "bridge">("send");
 
   const arcChain = chains.find((c) => c.id === "arc");
   const realArcBalance = arcChain?.balance ?? 0;
@@ -1276,6 +1286,14 @@ export default function Home() {
           <span className="bg-gradient-to-r from-white via-sky-sync to-white/70 bg-clip-text text-transparent">ArcFlow</span>
         </span>
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setActiveTab(activeTab === "send" ? "bridge" : "send")}
+            className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-xs font-display font-bold text-emerald-400 transition-all hover:bg-emerald-500/20 active:scale-95"
+          >
+            <ArrowRightLeft className="h-4 w-4" />
+            <span>{activeTab === "send" ? "CCTP Köprüsü" : "Para Gönder"}</span>
+          </button>
           <a
             href="/history"
             className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-display font-bold text-white transition-all hover:bg-white/10 hover:border-white/20 active:scale-95"
@@ -1294,20 +1312,55 @@ export default function Home() {
       <main className="flex flex-1 flex-col items-center justify-center px-6 pb-24 pt-8 sm:px-10">
         <UnifiedBalanceDisplay total={totalUnified} isLoading={isLoading} isArcLoading={isArcLoading} isConnected={isConnected} />
         <ChainBreakdown chains={chains} isConnected={isConnected} />
-        <SendFunds
-          isConnected={isConnected}
-          totalUnified={totalUnified}
-          realArcBalance={realArcBalance}
-          isPrivateMode={isPrivateMode}
-          onTogglePrivacy={togglePrivacy}
-          generateViewingKey={generateViewingKey}
-          executeSend={executeSend}
-          sendStatus={sendStatus}
-          sendError={sendError}
-          resetSend={resetSend}
-          chains={chains}
-        />
-        <AddFundsCard isConnected={isConnected} />
+
+        {/* Main Action Navigation Tabs */}
+        <div className="mx-auto mt-8 w-full max-w-md flex items-center justify-center p-1 rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-md">
+          <button
+            type="button"
+            onClick={() => setActiveTab("send")}
+            className={`flex-1 py-2.5 rounded-xl font-display text-xs font-bold transition-all ${
+              activeTab === "send"
+                ? "bg-white/10 text-white shadow-md border border-white/10"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            ⚡ EVRENSEL GÖNDERİM
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("bridge")}
+            className={`flex-1 py-2.5 rounded-xl font-display text-xs font-bold transition-all ${
+              activeTab === "bridge"
+                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-md"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            🌉 CIRCLE CCTP KÖPRÜ
+          </button>
+        </div>
+
+        {activeTab === "send" ? (
+          <>
+            <SendFunds
+              isConnected={isConnected}
+              totalUnified={totalUnified}
+              realArcBalance={realArcBalance}
+              isPrivateMode={isPrivateMode}
+              onTogglePrivacy={togglePrivacy}
+              generateViewingKey={generateViewingKey}
+              executeSend={executeSend}
+              sendStatus={sendStatus}
+              sendError={sendError}
+              resetSend={resetSend}
+              chains={chains}
+            />
+            <AddFundsCard isConnected={isConnected} onSelectBridgeTab={() => setActiveTab("bridge")} />
+          </>
+        ) : (
+          <div className="mt-8 w-full">
+            <BridgePanel />
+          </div>
+        )}
         <AuditorPanel storedKeys={storedKeys} revealTransactionDetails={revealTransactionDetails} />
         <ArcAgentPanel
           isConnected={isConnected}
